@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="msgs_log_file_list_title">ログファイル管理</string>
+	
+	<string name="msgs_log_file_list_menu_browse">ログファイル表示</string>
+	<string name="msgs_log_file_list_menu_delete">ログファイル削除</string>
+	<string name="msgs_log_file_list_menu_send">ログファイル送信</string>
+	<string name="msgs_log_file_list_menu_archive">ログファイル保存</string>
+	
+	<string name="msgs_log_file_list_delete_confirm_msg">下記のログファイルを削除しますか？</string>
+	
+	<string name="msgs_log_file_list_dlg_close">閉じる</string>
+	
+	<string name="msgs_log_file_list_dlg_send_zip_file_creating">zipファイルの作成中</string>
+	<string name="msgs_log_file_list_dlg_send_zip_file_cancelled">zipファイル作成がキャンセルされました</string>
+</resources>

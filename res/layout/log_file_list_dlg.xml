@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:ignore="HardcodedText" >
+    
+    <TextView
+        android:id="@+id/log_file_list_dlg_title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:gravity="center"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+    
+     <include layout="@layout/divider_line1_turquoise" />
+    
+    
+    <ListView
+        android:id="@+id/log_file_list_dlg_log_listview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" 
+        android:fadeScrollbars="false">
+    </ListView>
+
+    <Button
+        android:id="@+id/log_file_list_dlg_log_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/msgs_log_file_list_dlg_close" 
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+</LinearLayout>

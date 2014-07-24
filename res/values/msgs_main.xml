@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="msgs_main_menu_start">開始</string>
+    <string name="msgs_main_menu_stop">停止</string>
+    <string name="msgs_main_menu_show_log">ログ表示</string>
+    <string name="msgs_main_menu_setting">設定</string>
+</resources>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_main_title">設定</string>
+    <string name="settings_main_ui_title">ユーザーインターフェース</string>
+    <string name="settings_main_video_title">ビデオ</string>
+    <string name="settings_main_misc_title">その他</string>
+    
+    <string name="settings_default_current_setting">現設定=</string>
+    
+	<string name="settings_recording_duration_title">録画時間</string>
+	<string name="settings_recording_duration_summary">現在の設定=</string>
+	<string name="settings_recording_duration_dialog_title">録画時間の選択</string>
+	<string name="settings_recording_duration">settings_recording_duration</string>
+	<string-array name="settings_recording_duration_list_entries">
+        <item>1分</item>
+        <item>2分</item>
+        <item>3分</item>
+        <item>5分</item>
+    </string-array>
+	<string-array name="settings_recording_duration_list_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>5</item>
+    </string-array>
+
+	<string name="settings_max_video_keep_generation_title">ビデオ保存世代</string>
+	<string name="settings_max_video_keep_generation_summary">現在の設定=</string>
+	<string name="settings_max_video_keep_generation_dialog_title">ビデオ保存世代の選択</string>
+	<string name="settings_max_video_keep_generation">settings_max_video_keep_generation</string>
+	<string-array name="settings_max_video_keep_generation_list_entries">
+        <item>10世代</item>
+        <item>50世代</item>
+        <item>100世代</item>
+        <item>200世代</item>
+        <item>300世代</item>
+    </string-array>
+	<string-array name="settings_max_video_keep_generation_list_values">
+        <item>10</item>
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>300</item>
+    </string-array>
+
+	<string name="settings_video_record_size_title">ビデオ品質</string>
+	<string name="settings_video_record_size_summary">現在の設定=</string>
+	<string name="settings_video_record_size_dialog_title">ビデオ品質の選択</string>
+	<string name="settings_video_record_size">settings_video_record_size</string>
+	<string-array name="settings_video_record_size_list_entries">
+        <item>低</item>
+        <item>高</item>
+    </string-array>
+	<string-array name="settings_video_record_size_list_values">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+		
+	<string name="settings_auto_record_start_title">自動スタート</string>
+	<string name="settings_auto_record_start_summary">現在の設定=</string>
+	<string name="settings_auto_record_start_dialog_title">自動スタート感度の選択</string>
+	<string name="settings_auto_record_start">settings_auto_record_start</string>
+	<string-array name="settings_auto_record_start_list_entries">
+	    <item>自動スターしない</item>
+	    <item>かなり敏感</item>
+        <item>敏感</item>
+        <item>中ぐらい</item>
+        <item>鈍感</item>
+        <item>かなり鈍感</item>
+    </string-array>
+	<string-array name="settings_auto_record_start_list_values">
+	    <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+			
+    <string name="settings_device_orientation_portrait">settings_device_orientation_portrait</string>
+    <string name="settings_device_orientation_portrait_title">縦位置で録画</string>
+    <string name="settings_device_orientation_portrait_summary">向きを縦にする（省略時の向きは横）</string>
+														
+    <string name="settings_video_folder">settings_video_folder</string>
+    <string name="settings_video_folder_title">ビデオフォルダー</string>
+    <string name="settings_video_folder_summary">ビデオフォルダー</string>
+
+    <string name="settings_debug_enable_title">デバッグ情報</string>
+	<string name="settings_debug_enable_summary_ena">デバッグ情報をLOGCATに書き出す</string>
+	<string name="settings_debug_enable">settings_debug_enable</string>
+
+    <string name="settings_exit_cleanly_title">アプリケーション終了時の処理</string>
+	<string name="settings_exit_cleanly_summary_ena">プロセスをKill</string>
+	<string name="settings_exit_cleanly">settings_exit_cleanly</string>
+		
+</resources>
