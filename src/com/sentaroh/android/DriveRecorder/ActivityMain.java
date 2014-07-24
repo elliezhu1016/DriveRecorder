@@ -1,12 +1,6 @@
 package com.sentaroh.android.DriveRecorder;
 
 
-//import static com.sentaroh.android.DriveRecorder.Constants.*;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.Thread.UncaughtExceptionHandler;
 
 import com.sentaroh.android.DriveRecorder.Log.LogFileListDialogFragment;
@@ -491,26 +485,25 @@ public class ActivityMain extends FragmentActivity {
             				":"+st[i].getLineNumber()+")";
             	}
     			String end_msg2="Caused by:"+cause.toString()+st_msg;
+    			mLog.addDebugMsg(1, "E", end_msg);
+    			mLog.addDebugMsg(1, "E", end_msg2);
   
-//    			Log.v("",end_msg2);
-    			
-    			File ldir=new File(mGp.settingsLogFileDir);
-    			if (!ldir.exists()) ldir.mkdirs();
-    			
-        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
-        		try {
-        			FileWriter fw=new FileWriter(lf,true);
-					PrintWriter pw=new PrintWriter(fw);
-					pw.println(end_msg);
-					pw.println(end_msg2);
-					pw.flush();
-					pw.close();
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//    			File ldir=new File(mGp.settingsLogFileDir);
+//    			if (!ldir.exists()) ldir.mkdirs();
+//    			
+//        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
+//        		try {
+//        			FileWriter fw=new FileWriter(lf,true);
+//					PrintWriter pw=new PrintWriter(fw);
+//					pw.println(end_msg);
+//					pw.println(end_msg2);
+//					pw.flush();
+//					pw.close();
+//				} catch (FileNotFoundException e) {
+//					e.printStackTrace();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
                 // re-throw critical exception further to the os (important)
                 defaultUEH.uncaughtException(thread, ex);
             }

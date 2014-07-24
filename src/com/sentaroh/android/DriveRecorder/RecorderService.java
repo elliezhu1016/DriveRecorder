@@ -3,10 +3,7 @@ package com.sentaroh.android.DriveRecorder;
 import static com.sentaroh.android.DriveRecorder.Constants.*;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,7 +108,7 @@ public class RecorderService extends Service {
 
     	mWidget=new WidgetService(mContext, mGp, mLog);
     	
-//    	startBasicEventReceiver(mGp);
+    	startBasicEventReceiver(mGp);
     	
     	setSensor();
     	
@@ -145,6 +142,14 @@ public class RecorderService extends Service {
 					startRecorderThread();
 				}
 			}
+		} else if ((mGp.screenIsLocked && action.equals("android.media.VOLUME_CHANGED_ACTION"))) {
+			if (!mGp.isRecording) {
+				if (mToggleBtnEnabled) {
+					mWidget.setIconStartStop();
+					mToggleBtnEnabled=false;
+					startRecorderThread();
+				}
+			}
 		}
 		return START_STICKY;
 	};
@@ -162,7 +167,7 @@ public class RecorderService extends Service {
         mLog.addDebugMsg(1,"I", "onDestroy entered");
         unsetSensor();
         closeNotification();
-//        stopBasicEventReceiver(mGp);
+        stopBasicEventReceiver(mGp);
         mLog.flushLog();
         removeCameraPreview();
     };
@@ -777,7 +782,6 @@ public class RecorderService extends Service {
  		}
  	};
  
-	@SuppressWarnings("unused")
 	final private void startBasicEventReceiver(GlobalParameters gp) {
 		mLog.addDebugMsg(1, "I", "startBasicEventReceiver entered");
 		IntentFilter intent = null;
@@ -790,7 +794,6 @@ public class RecorderService extends Service {
 
 	};
 
-	@SuppressWarnings("unused")
 	final private void stopBasicEventReceiver(GlobalParameters gp) {
 		mLog.addDebugMsg(1, "I", "stopBasicEventReceiver entered");
 		unregisterReceiver(mSleepReceiver);
@@ -965,26 +968,26 @@ public class RecorderService extends Service {
             				":"+st[i].getLineNumber()+")";
             	}
     			String end_msg2="Caused by:"+cause.toString()+st_msg;
-  
-//    			Log.v("",end_msg2);
+
+    			mLog.addDebugMsg(1, "E", end_msg);
+    			mLog.addDebugMsg(1, "E", end_msg2);
     			
-    			File ldir=new File(mGp.settingsLogFileDir);
-    			if (!ldir.exists()) ldir.mkdirs();
-    			
-        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
-        		try {
-        			FileWriter fw=new FileWriter(lf,true);
-					PrintWriter pw=new PrintWriter(fw);
-					pw.println(end_msg);
-					pw.println(end_msg2);
-					pw.flush();
-					pw.close();
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//    			File ldir=new File(mGp.settingsLogFileDir);
+//    			if (!ldir.exists()) ldir.mkdirs();
+//    			
+//        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
+//        		try {
+//        			FileWriter fw=new FileWriter(lf,true);
+//					PrintWriter pw=new PrintWriter(fw);
+//					pw.println(end_msg);
+//					pw.println(end_msg2);
+//					pw.flush();
+//					pw.close();
+//				} catch (FileNotFoundException e) {
+//					e.printStackTrace();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
                 // re-throw critical exception further to the os (important)
                 defaultUEH.uncaughtException(thread, ex);
             }
