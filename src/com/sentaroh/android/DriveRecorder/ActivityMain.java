@@ -2,6 +2,10 @@ package com.sentaroh.android.DriveRecorder;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +45,6 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -114,6 +117,8 @@ public class ActivityMain extends FragmentActivity {
         
         mLog=new LogUtil(mContext, "Main", mGp);
         
+        mLog.addDebugMsg(1, "I","onCreate entered");
+        
         mCcMenu = new CustomContextMenu(getResources(),getSupportFragmentManager());
         mCommonDlg=new CommonDialog(mContext, getSupportFragmentManager());
         
@@ -123,8 +128,8 @@ public class ActivityMain extends FragmentActivity {
         Intent intent = new Intent(this, RecorderService.class);
         startService(intent);
 
-	    defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
-        Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
+//	    defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
+//        Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
         
         mDayListView=(ListView)findViewById(R.id.main_day_listview);
         mFileListView=(ListView)findViewById(R.id.main_file_listview);
@@ -135,12 +140,15 @@ public class ActivityMain extends FragmentActivity {
     @Override
     public void onResume() {
     	super.onResume();
+    	mLog.addDebugMsg(1, "I","onResume entered, restartStatus="+mRestartStatus);
 		refreshOptionMenu();
     	if (mRestartStatus==1) {
         	if (isRecording()) {
         		showPreview();
+        		setUiEnabled(false);
         	} else {
         		hidePreview();
+        		setUiEnabled(true);
         	};
     	} else {
     		NotifyEvent ntfy=new NotifyEvent(mContext);
@@ -156,8 +164,10 @@ public class ActivityMain extends FragmentActivity {
 					}
 	            	if (isRecording()) {
 	            		showPreview();
+	            		setUiEnabled(false);
 	            	} else {
 	            		hidePreview();
+	            		setUiEnabled(true);
 	            	};
 			        mRestartStatus=1;
 
@@ -166,7 +176,9 @@ public class ActivityMain extends FragmentActivity {
 			        	hndl.postDelayed(new Runnable(){
 							@Override
 							public void run() {
-					    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
+//								Log.v("","lv="+mDayListView+", ch="+mDayListView.getChildAt(0));
+//					    		if (mDayListView.getChildAt(0)!=null) 
+//					    			mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
 					    		createFileList(mDayListAdapter.getItem(0).day);
 							}
 			        	}, 100);
@@ -431,7 +443,7 @@ public class ActivityMain extends FragmentActivity {
 					int position, long id) {
 				for (int j = 0; j < parent.getChildCount(); j++)
 	                parent.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-	            view.setBackgroundColor(Color.DKGRAY);
+//	            view.setBackgroundColor(Color.DKGRAY);
 				createFileList(mDayListAdapter.getItem(position).day);
 			}
     	});
@@ -469,7 +481,7 @@ public class ActivityMain extends FragmentActivity {
 						        	hndl.postDelayed(new Runnable(){
 										@Override
 										public void run() {
-								    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
+//								    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
 								    		createFileList(mDayListAdapter.getItem(0).day);
 										}
 						        	}, 100);
@@ -513,7 +525,7 @@ public class ActivityMain extends FragmentActivity {
 	        	dc_files=crf.delete(MediaStore.Files.getContentUri("external"), 
 	          		MediaStore.Files.FileColumns.DATA + "=?", new String[]{fp} );
 	        }
-	        Log.v("","fp="+fp);
+//	        Log.v("","fp="+fp);
 		} else {
 //       		sendDebugLogMsg(1,"I","deleMediaStoreItem not MediaStore library. fn="+
 //	       				fp+"");
@@ -543,7 +555,7 @@ public class ActivityMain extends FragmentActivity {
 					int position, long id) {
 				for (int j = 0; j < parent.getChildCount(); j++)
 	                parent.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-	            view.setBackgroundColor(Color.DKGRAY);
+//	            view.setBackgroundColor(Color.DKGRAY);
 	            
 				FileListItem fli=mFileListAdapter.getItem(position);
 	            
@@ -585,7 +597,7 @@ public class ActivityMain extends FragmentActivity {
 					        	hndl.postDelayed(new Runnable(){
 									@Override
 									public void run() {
-							    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
+//							    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
 							    		createFileList(mDayListAdapter.getItem(0).day);
 									}
 					        	}, 100);
@@ -755,7 +767,7 @@ public class ActivityMain extends FragmentActivity {
 					    		createFileList(mCurrentSelectedDayList);
 					    		for (int i=0;i<mDayListAdapter.getCount();i++) {
 					    			if (mDayListAdapter.getItem(i).day.equals(mCurrentSelectedDayList)) {
-					    				mDayListView.getChildAt(i).setBackgroundColor(Color.DKGRAY);
+//					    				mDayListView.getChildAt(i).setBackgroundColor(Color.DKGRAY);
 					    				break;
 					    			}
 					    		}
@@ -836,7 +848,8 @@ public class ActivityMain extends FragmentActivity {
  
 	// Default uncaught exception handler variable
     private UncaughtExceptionHandler defaultUEH;
-    private Thread.UncaughtExceptionHandler unCaughtExceptionHandler =
+    @SuppressWarnings("unused")
+	private Thread.UncaughtExceptionHandler unCaughtExceptionHandler =
         new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
@@ -860,25 +873,25 @@ public class ActivityMain extends FragmentActivity {
             				":"+st[i].getLineNumber()+")";
             	}
     			String end_msg2="Caused by:"+cause.toString()+st_msg;
-    			mLog.addDebugMsg(1, "E", end_msg);
-    			mLog.addDebugMsg(1, "E", end_msg2);
+//    			mLog.addDebugMsg(1, "E", end_msg);
+//    			mLog.addDebugMsg(1, "E", end_msg2);
   
-//    			File ldir=new File(mGp.settingsLogFileDir);
-//    			if (!ldir.exists()) ldir.mkdirs();
-//    			
-//        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
-//        		try {
-//        			FileWriter fw=new FileWriter(lf,true);
-//					PrintWriter pw=new PrintWriter(fw);
-//					pw.println(end_msg);
-//					pw.println(end_msg2);
-//					pw.flush();
-//					pw.close();
-//				} catch (FileNotFoundException e) {
-//					e.printStackTrace();
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
+    			File ldir=new File(mGp.settingsLogFileDir);
+    			if (!ldir.exists()) ldir.mkdirs();
+    			
+        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
+        		try {
+        			FileWriter fw=new FileWriter(lf,true);
+					PrintWriter pw=new PrintWriter(fw);
+					pw.println(end_msg);
+					pw.println(end_msg2);
+					pw.flush();
+					pw.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
                 // re-throw critical exception further to the os (important)
                 defaultUEH.uncaughtException(thread, ex);
             }
