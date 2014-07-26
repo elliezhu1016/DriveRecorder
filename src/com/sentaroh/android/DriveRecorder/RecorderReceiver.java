@@ -19,7 +19,7 @@ public class RecorderReceiver extends BroadcastReceiver{
 		if (mWakeLock==null) mWakeLock=
    	    		((PowerManager)context.getSystemService(Context.POWER_SERVICE))
     			.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK    					
-    				| PowerManager.ON_AFTER_RELEASE, "TaskAutomation-Receiver");
+    				| PowerManager.ON_AFTER_RELEASE, "DriveRecorder-Receiver");
 		if (!mWakeLock.isHeld()) mWakeLock.acquire(100);
 //		mWakeLock.acquire(100);
 		

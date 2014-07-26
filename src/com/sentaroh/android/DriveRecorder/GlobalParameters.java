@@ -2,10 +2,16 @@ package com.sentaroh.android.DriveRecorder;
 
 
 import static com.sentaroh.android.DriveRecorder.Constants.*;
+
+import java.util.ArrayList;
+
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -20,8 +26,6 @@ public class GlobalParameters extends Application{
 
 	public boolean settingsLogEnabled=false;
 	
-	public boolean settingsDeviceOrientationPortrait=false;
-	
 	public boolean isRecording=false;
 	
 	public boolean screenIsLocked=false;
@@ -33,6 +37,9 @@ public class GlobalParameters extends Application{
 	public String settingsLogFileName="DriveRecorder_log";
 	public int settingsLogFileBufferSize=1024*32;
 	public int settingsLogMaxFileCount=10;
+	
+	public boolean settingsDeviceOrientationPortrait=false;
+	public boolean settingsRecordSound=true;
 
 	public int settingsRecordingDuration=3;
 	public int settingsMaxVideoKeepGeneration=100;
@@ -94,6 +101,4 @@ public class GlobalParameters extends Application{
 			prefs.edit().putString(c.getString(R.string.settings_max_video_keep_generation),"100").commit();
 		}
 	};
-    
-    
 }

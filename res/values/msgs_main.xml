@@ -4,4 +4,8 @@
     <string name="msgs_main_menu_stop">停止</string>
     <string name="msgs_main_menu_show_log">ログ表示</string>
     <string name="msgs_main_menu_setting">設定</string>
+    
+    <string name="msgs_main_ccmenu_day_delete">削除</string>
+    <string name="msgs_main_ccmenu_day_delete_day_confirm">%s に録画したファイルを全て削除してよろしいですか？</string>
+    <string name="msgs_main_ccmenu_day_delete_file_confirm">%s を削除してよろしいですか？</string>
 </resources>
