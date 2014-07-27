@@ -62,7 +62,7 @@
 				
         <receiver 
     	    android:name="com.sentaroh.android.DriveRecorder.Log.LogReceiver"
-    	    android:exported="false">
+    	    android:exported="false" android:process=":Log">
 			<intent-filter>
 			    <action android:name="android.intent.action.ACTION_SHUTDOWN" />
 			    <action android:name="android.intent.action.MEDIA_MOUNTED" />

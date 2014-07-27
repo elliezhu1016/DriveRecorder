@@ -109,21 +109,6 @@ public class ActivitySetting extends PreferenceActivity{
 		
 		if (key_string.equals(c.getString(R.string.settings_device_orientation_portrait))) {
     		isChecked=true;
-    	} else if (key_string.equals(c.getString(R.string.settings_auto_record_start))) {
-    		isChecked=true;
-    		String ts=shared_pref.getString(key_string,"0");
-    		String[] ts_label= c.getResources().getStringArray(R.array.settings_auto_record_start_list_entries);
-    		if (ts.equals("0")) {
-        		pref_key.setSummary(ts_label[0]);
-    		} else if (ts.equals("1")) {
-        		pref_key.setSummary(ts_label[1]);
-    		} else if (ts.equals("2")) {
-        		pref_key.setSummary(ts_label[2]);
-    		} else if (ts.equals("3")) {
-        		pref_key.setSummary(ts_label[3]);
-    		} else if (ts.equals("4")) {
-        		pref_key.setSummary(ts_label[4]);
-    		}
     	}
 		return isChecked;
 	};
@@ -149,6 +134,19 @@ public class ActivitySetting extends PreferenceActivity{
 		if (key_string.equals(c.getString(R.string.settings_video_folder))) {
     		isChecked=true;
     		pref_key.setSummary(shared_pref.getString(key_string, "/mnt/sdcard/DriveRecorder/Videos/"));
+    	} else if (key_string.equals(c.getString(R.string.settings_recording_duration))) {
+    		isChecked=true;
+    		String ts=shared_pref.getString(key_string,"3");
+    		String[] ts_label= c.getResources().getStringArray(R.array.settings_recording_duration_list_entries);
+    		if (ts.equals("1")) {
+        		pref_key.setSummary(ts_label[0]);
+    		} else if (ts.equals("2")) {
+        		pref_key.setSummary(ts_label[1]);
+    		} else if (ts.equals("3")) {
+        		pref_key.setSummary(ts_label[2]);
+    		} else if (ts.equals("5")) {
+        		pref_key.setSummary(ts_label[3]);
+    		}
     	} else if (key_string.equals(c.getString(R.string.settings_max_video_keep_generation))) {
     		isChecked=true;
     		String ts=shared_pref.getString(key_string,"100");
@@ -175,8 +173,9 @@ public class ActivitySetting extends PreferenceActivity{
     		} else if (ts.equals("2")) {
         		pref_key.setSummary(ts_label[2]);
     		}
-    	} 
-
+    	} else if (key_string.equals(c.getString(R.string.settings_record_sound))) {
+    		isChecked=true;
+    	}
     	return isChecked;
 	};
 
@@ -208,7 +207,6 @@ public class ActivitySetting extends PreferenceActivity{
     		SharedPreferences shared_pref = PreferenceManager.getDefaultSharedPreferences(mContext);
 
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_device_orientation_portrait));
-    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_auto_record_start));
         };
         
         @Override
@@ -244,6 +242,7 @@ public class ActivitySetting extends PreferenceActivity{
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_recording_duration));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_max_video_keep_generation));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_size));
+    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_record_sound));
         };
         
         @Override

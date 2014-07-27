@@ -46,8 +46,6 @@ public class GlobalParameters extends Application{
 	
 	public int settingsVideoBitRate=1024*1024;
 
-	public int settingsAutoRecordingStartLevel=12;
-	
 	public int settingsRecordVideoSize=RECORD_VIDEO_QUALITY_LOW;//1280_720;//720_480;
     
 	public String videoFileDir="", videoFileNamePrefix="drive_record_";
@@ -79,9 +77,6 @@ public class GlobalParameters extends Application{
 		settingsDeviceOrientationPortrait=
 				prefs.getBoolean(c.getString(R.string.settings_device_orientation_portrait),false);
 
-		settingsAutoRecordingStartLevel=Integer.parseInt(
-				prefs.getString(c.getString(R.string.settings_auto_record_start),"0"));
-		
 		settingsRecordVideoSize=Integer.parseInt(
 				prefs.getString(c.getString(R.string.settings_video_record_size),"0"));
 
@@ -99,6 +94,7 @@ public class GlobalParameters extends Application{
 			
 			prefs.edit().putString(c.getString(R.string.settings_recording_duration),"3").commit();
 			prefs.edit().putString(c.getString(R.string.settings_max_video_keep_generation),"100").commit();
+			prefs.edit().putBoolean(c.getString(R.string.settings_record_sound),true).commit();
 		}
 	};
 }

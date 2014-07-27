@@ -37,14 +37,14 @@ public class AdapterDayList extends ArrayAdapter<DayListItem> {
             v = vi.inflate(id, null);
             holder=new ViewHolder();
             holder.tv_itemname= (TextView) v.findViewById(R.id.day_list_item_name);
-            holder.tv_count= (TextView) v.findViewById(R.id.day_list_item_count);
+//            holder.tv_count= (TextView) v.findViewById(R.id.day_list_item_count);
             v.setTag(holder);
         } else {
         	holder= (ViewHolder)v.getTag();
         }
         final DayListItem o = items.get(position);
     	holder.tv_itemname.setText(o.day);
-    	holder.tv_count.setText(o.no_of_file);
+//    	holder.tv_count.setText(o.no_of_file);
         return v;
 	};
 

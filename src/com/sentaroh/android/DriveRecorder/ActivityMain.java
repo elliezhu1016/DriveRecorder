@@ -2,11 +2,6 @@ package com.sentaroh.android.DriveRecorder;
 
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -128,9 +123,6 @@ public class ActivityMain extends FragmentActivity {
         Intent intent = new Intent(this, RecorderService.class);
         startService(intent);
 
-//	    defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
-//        Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
-        
         mDayListView=(ListView)findViewById(R.id.main_day_listview);
         mFileListView=(ListView)findViewById(R.id.main_file_listview);
         
@@ -846,56 +838,4 @@ public class ActivityMain extends FragmentActivity {
 		}
 	};
  
-	// Default uncaught exception handler variable
-    private UncaughtExceptionHandler defaultUEH;
-    @SuppressWarnings("unused")
-	private Thread.UncaughtExceptionHandler unCaughtExceptionHandler =
-        new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable ex) {
-            	Thread.currentThread().setUncaughtExceptionHandler(defaultUEH);
-//            	ex.printStackTrace();
-            	StackTraceElement[] st=ex.getStackTrace();
-            	String st_msg="";
-            	for (int i=0;i<st.length;i++) {
-            		st_msg+="\n at "+st[i].getClassName()+"."+
-            				st[i].getMethodName()+"("+st[i].getFileName()+
-            				":"+st[i].getLineNumber()+")";
-            	}
-    			String end_msg=ex.toString()+st_msg;
-    			
-    			Throwable cause=ex.getCause();
-    			st=cause.getStackTrace();
-    			st_msg="";
-            	for (int i=0;i<st.length;i++) {
-            		st_msg+="\n at "+st[i].getClassName()+"."+
-            				st[i].getMethodName()+"("+st[i].getFileName()+
-            				":"+st[i].getLineNumber()+")";
-            	}
-    			String end_msg2="Caused by:"+cause.toString()+st_msg;
-//    			mLog.addDebugMsg(1, "E", end_msg);
-//    			mLog.addDebugMsg(1, "E", end_msg2);
-  
-    			File ldir=new File(mGp.settingsLogFileDir);
-    			if (!ldir.exists()) ldir.mkdirs();
-    			
-        		File lf=new File(mGp.settingsLogFileDir+"exception.txt");
-        		try {
-        			FileWriter fw=new FileWriter(lf,true);
-					PrintWriter pw=new PrintWriter(fw);
-					pw.println(end_msg);
-					pw.println(end_msg2);
-					pw.flush();
-					pw.close();
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-                // re-throw critical exception further to the os (important)
-                defaultUEH.uncaughtException(thread, ex);
-            }
-    };
-
-
 }
