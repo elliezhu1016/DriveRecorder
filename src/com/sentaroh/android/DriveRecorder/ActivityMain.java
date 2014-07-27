@@ -1,7 +1,16 @@
 package com.sentaroh.android.DriveRecorder;
 
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,11 +38,15 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -116,6 +129,8 @@ public class ActivityMain extends FragmentActivity {
         
         mCcMenu = new CustomContextMenu(getResources(),getSupportFragmentManager());
         mCommonDlg=new CommonDialog(mContext, getSupportFragmentManager());
+
+        loadThumnailList();
         
         if (mGp.settingsDeviceOrientationPortrait) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         else setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
@@ -125,8 +140,6 @@ public class ActivityMain extends FragmentActivity {
 
         mDayListView=(ListView)findViewById(R.id.main_day_listview);
         mFileListView=(ListView)findViewById(R.id.main_file_listview);
-        
-        createDayList();
     };
     
     @Override
@@ -147,7 +160,7 @@ public class ActivityMain extends FragmentActivity {
     		ntfy.setListener(new NotifyEventListener(){
 				@Override
 				public void positiveResponse(Context c, Object[] o) {
-					setCallbackListener();
+			        setCallbackListener();
 					setActivityStarted(true);
 					if (mRestartStatus==0) {
 						
@@ -163,6 +176,7 @@ public class ActivityMain extends FragmentActivity {
 	            	};
 			        mRestartStatus=1;
 
+			        createDayList();
 			        if (mDayListAdapter.getCount()>0) {
 			        	Handler hndl=new Handler();
 			        	hndl.postDelayed(new Runnable(){
@@ -180,9 +194,7 @@ public class ActivityMain extends FragmentActivity {
 			        setFileListListener();
 				}
 				@Override
-				public void negativeResponse(Context c, Object[] o) {
-					
-				}
+				public void negativeResponse(Context c, Object[] o) {}
     		});
     		openService(ntfy);
     	}
@@ -609,6 +621,7 @@ public class ActivityMain extends FragmentActivity {
     };
 
     private void createDayList() {
+    	mLog.addDebugMsg(1, "I","createDayList entered");
     	ArrayList<DayListItem> fl=new ArrayList<DayListItem>();
     	File lf=new File(mGp.videoFileDir);
     	File[] tfl=lf.listFiles();
@@ -645,6 +658,7 @@ public class ActivityMain extends FragmentActivity {
     };
 
     private void createFileList(String sel_day) {
+    	mLog.addDebugMsg(1, "I","createFileList entered, day="+sel_day);
     	ArrayList<FileListItem> fl=new ArrayList<FileListItem>();
     	File lf=new File(mGp.videoFileDir);
     	File[] tfl=lf.listFiles();
@@ -655,8 +669,7 @@ public class ActivityMain extends FragmentActivity {
         			FileListItem fli=new FileListItem();
         			fli.file_name=tfl[i].getName();
         			fli.file_size=MiscUtil.convertFileSize(tfl[i].length());
-        			fli.thumbnail=ThumbnailUtils.createVideoThumbnail(tfl[i].getPath(), 
-        					MediaStore.Images.Thumbnails.MICRO_KIND);
+        			fli.thumbnail=readThumnailCache(tfl[i]);
         			fl.add(fli);	
         		}
     		}
@@ -670,8 +683,126 @@ public class ActivityMain extends FragmentActivity {
     	mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, fl);
     	mFileListView.setAdapter(mFileListAdapter);
     	mCurrentSelectedDayList=sel_day;
+    	saveThumnailList();
     };
-	
+
+    class ThumnailListItem {
+    	public String file_name="";
+    	public byte[] thumnail_byte_array=null;
+    }
+    private ArrayList<ThumnailListItem> mThumnailList=null;
+    private boolean mThumnailListModified=false;
+    private void loadThumnailList() {
+    	mThumnailList=new ArrayList<ThumnailListItem>();
+    	File lf=new File(Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/thumnail_cache");
+    	if (lf.exists()) {
+        	try {
+    			FileInputStream fis=new FileInputStream(lf);
+    			BufferedInputStream bis=new BufferedInputStream(fis);
+    			ObjectInputStream ois=new ObjectInputStream(bis);
+    			int l_cnt=ois.readInt();
+    	    	for(int i=0;i<l_cnt;i++) {
+    	    		ThumnailListItem tli=new ThumnailListItem();
+    	    		tli.file_name=ois.readUTF();
+    	    		int b_cnt=ois.readInt();
+    	    		if (b_cnt!=0) {
+    	    			tli.thumnail_byte_array=new byte[b_cnt];
+    	    			ois.readFully(tli.thumnail_byte_array);
+    	    		}
+    	    		mThumnailList.add(tli);
+    	    	}
+    	    	if (mThumnailList.size()>0) {
+        	    	for(int i=mThumnailList.size()-1;i>=0;i--) {
+        	    		ThumnailListItem tli=mThumnailList.get(i);
+        	        	File tlf=new File(mGp.videoFileDir+tli.file_name);
+        	        	if (!tlf.exists()) {
+        	        		mThumnailList.remove(i);
+                    		mThumnailListModified=true;
+        	        	}
+        	    	}
+               		saveThumnailList();
+    	    	}
+    		} catch (FileNotFoundException e) {
+    			e.printStackTrace();
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+    	}
+    	mLog.addDebugMsg(1, "I","ThumnailList loaded count="+mThumnailList.size());
+    };
+    
+    private void saveThumnailList() {
+    	mLog.addDebugMsg(1, "I","saveThumnailList entered, mThumnailListModified="+mThumnailListModified);
+    	if (mThumnailListModified) {
+    		mThumnailListModified=false;
+        	File lf=new File(Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/");
+        	if (!lf.exists()) lf.mkdirs();
+        	lf=new File(Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/thumnail_cache");
+        	lf.delete();
+        	try {
+    			if (mThumnailList.size()>0) {
+        			FileOutputStream fos=new FileOutputStream(lf);
+        			BufferedOutputStream bos=new BufferedOutputStream(fos);
+        			ObjectOutputStream oos=new ObjectOutputStream(bos);
+        			oos.writeInt(mThumnailList.size());
+        	    	for(int i=0;i<mThumnailList.size();i++) {
+        	    		ThumnailListItem tli=mThumnailList.get(i);
+        	    		if (!tli.file_name.equals("")) {
+        		    		oos.writeUTF(tli.file_name);
+        		    		if (tli.thumnail_byte_array!=null) {
+        		    			oos.writeInt(tli.thumnail_byte_array.length);
+        			    		oos.write(tli.thumnail_byte_array,0,tli.thumnail_byte_array.length);
+        		    		} else {
+        		    			oos.writeInt(0);
+        		    		}
+        	    		}
+        	    	}
+        	    	oos.flush();
+        	    	oos.close();
+    			}
+    		} catch (FileNotFoundException e) {
+    			e.printStackTrace();
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+    	}
+    };
+    
+    private Bitmap readThumnailCache(File vf) {
+    	boolean found=false;
+    	Bitmap bm=null;
+		ThumnailListItem tli=null;
+    	for(int i=0;i<mThumnailList.size();i++) {
+    		tli=mThumnailList.get(i);
+    		if (tli.file_name.equals(vf.getName())) {
+    			found=true;
+    			break;
+    		}
+    	}
+    	if (found) {
+    		if (tli.thumnail_byte_array!=null) 
+    			bm=BitmapFactory.decodeByteArray(tli.thumnail_byte_array, 0, tli.thumnail_byte_array.length);
+    	} else {
+    		tli=new ThumnailListItem();
+    		tli.file_name=vf.getName();
+    		bm=ThumbnailUtils.createVideoThumbnail(vf.getPath(), MediaStore.Images.Thumbnails.MICRO_KIND);
+    		if (bm!=null) {
+        		ByteArrayOutputStream baos=new ByteArrayOutputStream();
+        		bm.compress(CompressFormat.PNG, 50, baos);
+        		try {
+    				baos.flush();
+    	    		baos.close();
+    	    		tli.thumnail_byte_array=baos.toByteArray();
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
+    		}
+    		mThumnailListModified=true;
+    		mThumnailList.add(tli);
+    	}
+    	return bm;
+    };
+    
     private boolean isRecording() {
     	boolean result=false;
     	try {
@@ -756,7 +887,11 @@ public class ActivityMain extends FragmentActivity {
 							@Override
 							public void run() {
 //					    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
-					    		createFileList(mCurrentSelectedDayList);
+								if (mCurrentSelectedDayList.equals("")) {
+						    		createFileList(mDayListAdapter.getItem(0).day);
+								} else {
+						    		createFileList(mCurrentSelectedDayList);
+								}
 					    		for (int i=0;i<mDayListAdapter.getCount();i++) {
 					    			if (mDayListAdapter.getItem(i).day.equals(mCurrentSelectedDayList)) {
 //					    				mDayListView.getChildAt(i).setBackgroundColor(Color.DKGRAY);
