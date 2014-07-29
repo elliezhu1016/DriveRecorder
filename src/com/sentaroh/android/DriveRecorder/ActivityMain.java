@@ -140,6 +140,7 @@ public class ActivityMain extends FragmentActivity {
 
         mDayListView=(ListView)findViewById(R.id.main_day_listview);
         mFileListView=(ListView)findViewById(R.id.main_file_listview);
+        
     };
     
     @Override
@@ -562,21 +563,26 @@ public class ActivityMain extends FragmentActivity {
 //	            view.setBackgroundColor(Color.DKGRAY);
 	            
 				FileListItem fli=mFileListAdapter.getItem(position);
+				Intent intent;
+				intent = new Intent(mContext,ActivityVideoPlayer.class);
+				intent.putExtra("fp",fli.file_name);
+				startActivity(intent);
+
 	            
-				String fid="";
-	    		if (fli.file_name.lastIndexOf(".") > 0) {
-	    			fid = fli.file_name.substring(fli.file_name.lastIndexOf(".") + 1,
-	    					fli.file_name.length());
-	    			fid=fid.toLowerCase();
-	    		}
-	    		String mt=MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
-	    		if (mt != null) {
-    				Intent intent;
-    				intent = new Intent(android.content.Intent.ACTION_VIEW);
-    				intent.setDataAndType(
-    						Uri.parse("file://"+mGp.videoFileDir+fli.file_name), mt);
-   					startActivity(intent);
-	    		}
+//				String fid="";
+//	    		if (fli.file_name.lastIndexOf(".") > 0) {
+//	    			fid = fli.file_name.substring(fli.file_name.lastIndexOf(".") + 1,
+//	    					fli.file_name.length());
+//	    			fid=fid.toLowerCase();
+//	    		}
+//	    		String mt=MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
+//	    		if (mt != null) {
+//    				Intent intent;
+//    				intent = new Intent(android.content.Intent.ACTION_VIEW);
+//    				intent.setDataAndType(
+//    						Uri.parse("file://"+mGp.videoFileDir+fli.file_name), mt);
+//   					startActivity(intent);
+//	    		}
 			}
     	});
     	
