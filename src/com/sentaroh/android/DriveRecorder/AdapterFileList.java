@@ -40,6 +40,7 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
             holder=new ViewHolder();
             holder.tv_itemname= (TextView) v.findViewById(R.id.file_list_item_name);
             holder.tv_file_size= (TextView) v.findViewById(R.id.file_list_item_size);
+            holder.tv_duration= (TextView) v.findViewById(R.id.file_list_item_duration);
             holder.iv_thumnail=(ImageView) v.findViewById(R.id.file_list_thumnail);
             v.setTag(holder);
         } else {
@@ -47,19 +48,21 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
         }
         final FileListItem o = items.get(position);
     	holder.tv_itemname.setText(o.file_name);
+    	if (holder.tv_duration!=null) holder.tv_duration.setText(o.duration);
     	holder.tv_file_size.setText(o.file_size);
     	holder.iv_thumnail.setImageBitmap(o.thumbnail);
         return v;
 	};
 
 	class ViewHolder {
-		TextView tv_itemname, tv_file_size;
+		TextView tv_itemname, tv_file_size, tv_duration;
 		ImageView iv_thumnail;
 	}
 }
 
 class FileListItem {
 	public String file_name="";
+	public String duration="00:00";
 	public String file_size="";
 	public Bitmap thumbnail=null;
 }

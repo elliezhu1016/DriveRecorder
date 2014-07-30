@@ -56,6 +56,10 @@
         <item>1</item>
     </string-array>
 		
+	<string name="settings_video_playback_keep_aspect_ratio">settings_video_playback_keep_aspect_ratio</string>
+    <string name="settings_video_playback_keep_aspect_ratio_title">ビデオ再生の縦横比</string>
+    <string name="settings_video_playback_keep_aspect_ratio_summary">ビデオ再生の縦横比を保持する</string>
+	
     <string name="settings_device_orientation_portrait">settings_device_orientation_portrait</string>
     <string name="settings_device_orientation_portrait_title">縦位置で録画</string>
     <string name="settings_device_orientation_portrait_summary">向きを縦にする（省略時の向きは横）</string>

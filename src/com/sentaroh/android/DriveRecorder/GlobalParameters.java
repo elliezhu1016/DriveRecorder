@@ -47,6 +47,8 @@ public class GlobalParameters extends Application{
 	public int settingsVideoBitRate=1024*1024;
 
 	public int settingsRecordVideoSize=RECORD_VIDEO_QUALITY_LOW;//1280_720;//720_480;
+	
+	public boolean settingsVideoPlaybackKeepAspectRatio=false;
     
 	public String videoFileDir="", videoFileNamePrefix="drive_record_";
 
@@ -66,6 +68,9 @@ public class GlobalParameters extends Application{
 			settingsDebugLevel=0;
 			settingsLogEnabled=false;
 		}
+		
+		settingsVideoPlaybackKeepAspectRatio=
+				prefs.getBoolean(c.getString(R.string.settings_video_playback_keep_aspect_ratio),true);
 		
 		settingsExitCleanly=
 				prefs.getBoolean(c.getString(R.string.settings_exit_cleanly),false);

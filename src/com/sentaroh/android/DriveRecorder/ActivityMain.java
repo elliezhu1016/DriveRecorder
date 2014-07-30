@@ -38,6 +38,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
@@ -53,6 +54,7 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -668,14 +670,26 @@ public class ActivityMain extends FragmentActivity {
     	ArrayList<FileListItem> fl=new ArrayList<FileListItem>();
     	File lf=new File(mGp.videoFileDir);
     	File[] tfl=lf.listFiles();
+    	ContentResolver crv = mContext.getContentResolver();
+    	String[] query_proj=new String[] {MediaStore.Video.VideoColumns.DURATION};
     	if (tfl!=null && tfl.length>0) {
-    		for (int i=0;i<tfl.length;i++) {
+        	for (int i=0;i<tfl.length;i++) {
         		String tfn=tfl[i].getName().substring(13,23);
         		if (sel_day.equals(tfn)) {
         			FileListItem fli=new FileListItem();
         			fli.file_name=tfl[i].getName();
         			fli.file_size=MiscUtil.convertFileSize(tfl[i].length());
         			fli.thumbnail=readThumnailCache(tfl[i]);
+        			Cursor cursor=crv.query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, query_proj, "_data=?", 
+        	    			new String[]{tfl[i].getPath()}, null);
+        			if (cursor!=null && cursor.getCount()>0) {
+            			cursor.moveToNext();
+    			        int dur=Integer.parseInt(cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Video.VideoColumns.DURATION)));
+    					int mm=dur/1000/60;
+    					int ss=(dur-(mm*1000*60))/1000;
+    			        fli.duration=String.format("%02d",mm)+":"+String.format("%02d",ss);
+        			}
+                	cursor.close();
         			fl.add(fli);	
         		}
     		}
@@ -686,6 +700,7 @@ public class ActivityMain extends FragmentActivity {
 				}
     		});
     	}
+    	
     	mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, fl);
     	mFileListView.setAdapter(mFileListAdapter);
     	mCurrentSelectedDayList=sel_day;

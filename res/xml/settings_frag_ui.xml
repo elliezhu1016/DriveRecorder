@@ -5,4 +5,9 @@
 		android:key="settings_device_orientation_portrait"
 		android:title="@string/settings_device_orientation_portrait_title"
 		android:summary="@string/settings_device_orientation_portrait_summary" />
+  	<CheckBoxPreference
+		android:key="settings_video_playback_keep_aspect_ratio"
+		android:title="@string/settings_video_playback_keep_aspect_ratio_title"
+		android:summary="@string/settings_video_playback_keep_aspect_ratio_summary" />
+  		
 </PreferenceScreen>

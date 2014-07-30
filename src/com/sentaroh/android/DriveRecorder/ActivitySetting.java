@@ -109,7 +109,10 @@ public class ActivitySetting extends PreferenceActivity{
 		
 		if (key_string.equals(c.getString(R.string.settings_device_orientation_portrait))) {
     		isChecked=true;
+    	} else if (key_string.equals(c.getString(R.string.settings_video_playback_keep_aspect_ratio))) {
+    		isChecked=true;
     	}
+
 		return isChecked;
 	};
 
@@ -207,6 +210,7 @@ public class ActivitySetting extends PreferenceActivity{
     		SharedPreferences shared_pref = PreferenceManager.getDefaultSharedPreferences(mContext);
 
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_device_orientation_portrait));
+    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_playback_keep_aspect_ratio));
         };
         
         @Override
