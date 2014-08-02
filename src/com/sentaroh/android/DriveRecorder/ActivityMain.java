@@ -54,7 +54,6 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -481,7 +480,7 @@ public class ActivityMain extends FragmentActivity {
 						    		}
 						    	}
 						    	mDayListAdapter.remove(mDayListAdapter.getItem(position));
-						    	
+						    	housekeepThumnailCache();
 						    	createDayList();
 						        if (mDayListAdapter.getCount()>0) {
 						        	Handler hndl=new Handler();
@@ -602,6 +601,7 @@ public class ActivityMain extends FragmentActivity {
 				        deleteMediaStoreItem(fp);
 				        lf.delete();
 				    	mFileListAdapter.remove(mFileListAdapter.getItem(position));
+				    	housekeepThumnailCache();
 				    	if (mFileListAdapter.getCount()==0) {
 				    		createDayList();
 					        if (mDayListAdapter.getCount()>0) {
@@ -647,6 +647,7 @@ public class ActivityMain extends FragmentActivity {
     				dli.day=tfn;
     				fl.add(dli);
     				c_day=tfn;
+    				mLog.addDebugMsg(1, "I","createDayList Day "+tfn+" added");
     			}
     		}
     		
@@ -675,7 +676,7 @@ public class ActivityMain extends FragmentActivity {
     	if (tfl!=null && tfl.length>0) {
         	for (int i=0;i<tfl.length;i++) {
         		String tfn=tfl[i].getName().substring(13,23);
-        		if (sel_day.equals(tfn)) {
+        		if (sel_day.equals(tfn) && !mGp.currentRecordedFileName.equals(tfl[i].getName())) {
         			FileListItem fli=new FileListItem();
         			fli.file_name=tfl[i].getName();
         			fli.file_size=MiscUtil.convertFileSize(tfl[i].length());
@@ -690,6 +691,7 @@ public class ActivityMain extends FragmentActivity {
     			        fli.duration=String.format("%02d",mm)+":"+String.format("%02d",ss);
         			}
                 	cursor.close();
+                	mLog.addDebugMsg(1, "I","createFileList File "+fli.file_name+" added");
         			fl.add(fli);	
         		}
     		}
@@ -730,19 +732,15 @@ public class ActivityMain extends FragmentActivity {
     	    			tli.thumnail_byte_array=new byte[b_cnt];
     	    			ois.readFully(tli.thumnail_byte_array);
     	    		}
-    	    		mThumnailList.add(tli);
+                	File tlf=new File(mGp.videoFileDir+tli.file_name);
+                	if (tlf.exists()) {
+                		mThumnailList.add(tli);
+                		mLog.addDebugMsg(1, "I","ThumnailList file "+tli.file_name+" was added");
+                	} else {
+                		mThumnailListModified=true;
+                	}
     	    	}
-    	    	if (mThumnailList.size()>0) {
-        	    	for(int i=mThumnailList.size()-1;i>=0;i--) {
-        	    		ThumnailListItem tli=mThumnailList.get(i);
-        	        	File tlf=new File(mGp.videoFileDir+tli.file_name);
-        	        	if (!tlf.exists()) {
-        	        		mThumnailList.remove(i);
-                    		mThumnailListModified=true;
-        	        	}
-        	    	}
-               		saveThumnailList();
-    	    	}
+           		saveThumnailList();
     		} catch (FileNotFoundException e) {
     			e.printStackTrace();
     		} catch (IOException e) {
@@ -751,11 +749,25 @@ public class ActivityMain extends FragmentActivity {
     	}
     	mLog.addDebugMsg(1, "I","ThumnailList loaded count="+mThumnailList.size());
     };
+
+    private void housekeepThumnailCache() {
+    	if (mThumnailList.size()>0) {
+        	for(int i=mThumnailList.size()-1;i>=0;i--) {
+        		ThumnailListItem tli=mThumnailList.get(i);
+            	File tlf=new File(mGp.videoFileDir+tli.file_name);
+            	if (!tlf.exists()) {
+            		mThumnailList.remove(i);
+            		mThumnailListModified=true;
+            	}
+        	}
+    	}
+    };
     
     private void saveThumnailList() {
     	mLog.addDebugMsg(1, "I","saveThumnailList entered, mThumnailListModified="+mThumnailListModified);
     	if (mThumnailListModified) {
     		mThumnailListModified=false;
+    		housekeepThumnailCache();
         	File lf=new File(Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/");
         	if (!lf.exists()) lf.mkdirs();
         	lf=new File(Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/thumnail_cache");
@@ -795,8 +807,10 @@ public class ActivityMain extends FragmentActivity {
 		ThumnailListItem tli=null;
     	for(int i=0;i<mThumnailList.size();i++) {
     		tli=mThumnailList.get(i);
+//    		Log.v("","list name="+tli.file_name);
     		if (tli.file_name.equals(vf.getName())) {
     			found=true;
+//    			Log.v("","founded name="+vf.getName());
     			break;
     		}
     	}
@@ -807,6 +821,7 @@ public class ActivityMain extends FragmentActivity {
     		tli=new ThumnailListItem();
     		tli.file_name=vf.getName();
     		bm=ThumbnailUtils.createVideoThumbnail(vf.getPath(), MediaStore.Images.Thumbnails.MICRO_KIND);
+//    		Log.v("","bm="+bm);
     		if (bm!=null) {
         		ByteArrayOutputStream baos=new ByteArrayOutputStream();
         		bm.compress(CompressFormat.PNG, 50, baos);
@@ -821,6 +836,7 @@ public class ActivityMain extends FragmentActivity {
     		mThumnailListModified=true;
     		mThumnailList.add(tli);
     	}
+    	mLog.addDebugMsg(1, "I","readThumnailCache File "+vf.getName()+" Bitmap="+bm+", mThumnailListModified="+mThumnailListModified);
     	return bm;
     };
     

@@ -38,6 +38,7 @@
         <activity 
 	        android:name=".ActivityVideoPlayer"
             android:label="@string/app_name"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:alwaysRetainTaskState="true">
         </activity>
         <service 

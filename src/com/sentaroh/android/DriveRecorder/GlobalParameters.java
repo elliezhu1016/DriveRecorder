@@ -49,8 +49,11 @@ public class GlobalParameters extends Application{
 	public int settingsRecordVideoSize=RECORD_VIDEO_QUALITY_LOW;//1280_720;//720_480;
 	
 	public boolean settingsVideoPlaybackKeepAspectRatio=false;
+	
+	public int settingsVideoFrameRate=30;
     
 	public String videoFileDir="", videoFileNamePrefix="drive_record_";
+	public String currentRecordedFileName="";
 
 	public void loadSettingParms(Context c) {
 		

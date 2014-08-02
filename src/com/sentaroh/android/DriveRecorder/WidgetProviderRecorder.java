@@ -35,7 +35,7 @@ public class WidgetProviderRecorder extends AppWidgetProvider {
 	final static boolean WIDGET_DEBUG_ENABLE=true;
 	@Override
     public void onUpdate(Context c, AppWidgetManager awm, int[] awi) {
-		if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onUpdate(WIFI) widgetId="+awi[0]);
+		if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onUpdate(Recorder) widgetId="+awi[0]);
 		
 		RemoteViews rv = new RemoteViews(c.getPackageName(), R.layout.widget_layout_recorder);
         for (int i=0;i<awi.length;i++) {
@@ -48,7 +48,7 @@ public class WidgetProviderRecorder extends AppWidgetProvider {
 
     @Override
     public void onDisabled(Context c) {
-        if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onDisabled(WIFI)");
+        if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onDisabled(Recorder)");
         Intent in = new Intent(c, RecorderService.class);
     	in.setAction(WIDGET_RECORDER_DISABLE);
         c.startService(in);
@@ -56,7 +56,7 @@ public class WidgetProviderRecorder extends AppWidgetProvider {
 
     @Override
     public void onEnabled(Context c) {
-        if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onEnabled(WIFI)");
+        if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onEnabled(Recorder)");
         Intent in = new Intent(c, RecorderService.class);
     	in.setAction(WIDGET_RECORDER_ENABLE);
         c.startService(in);
@@ -64,7 +64,7 @@ public class WidgetProviderRecorder extends AppWidgetProvider {
     
     @Override
     public void onDeleted(Context c, int[] awi) {
-        if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onDeleted(Wifi) widgetId="+awi[0]);
+        if (WIDGET_DEBUG_ENABLE) Log.v(APPLICATION_TAG, "onDeleted(Recorder) widgetId="+awi[0]);
         Intent in = new Intent(c, RecorderService.class);
     	in.setAction(WIDGET_RECORDER_ENABLE);
         c.startService(in);
