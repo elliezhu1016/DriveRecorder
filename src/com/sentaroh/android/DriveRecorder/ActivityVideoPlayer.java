@@ -30,6 +30,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -252,7 +253,6 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			public void onClick(View v) {
 				NotifyEvent ntfy=new NotifyEvent(mContext);
 				ntfy.setListener(new NotifyEventListener(){
-					@SuppressWarnings("unused")
 					@Override
 					public void positiveResponse(Context c, Object[] o) {
 						stopVideoPlayer();
@@ -270,53 +270,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 						
 //						Log.v("","size="+mFileList.size()+", pos="+mCurrentSelectedPos);
 						if (mFileList.size()>0) {
-							mThumnailView.setVisibility(SurfaceView.VISIBLE);
 							if ((mCurrentSelectedPos+1)>mFileList.size()) mCurrentSelectedPos--;
-							mTvTitle.setText(mFileList.get(mCurrentSelectedPos).file_name);
-							mSbPlayPosition.setProgress(0);
-							mTvPlayPosition.setText("00:00");
-							setNextPrevBtnStatus();
-
-				    		Bitmap bm=ThumbnailUtils.createVideoThumbnail(mGp.videoFileDir+mFileList.get(mCurrentSelectedPos).file_name, 
-				    				MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
-				    		
-							int surfaceView_Width = mThumnailView.getWidth();
-						    int surfaceView_Height = mThumnailView.getHeight();
-						    float video_Width = bm.getWidth();
-						    float video_Height = bm.getHeight();
-						    float ratio_width = surfaceView_Width/video_Width;
-						    float ratio_height = surfaceView_Height/video_Height;
-						    float aspectratio = video_Width/video_Height;
-						    android.view.ViewGroup.LayoutParams layoutParams = mThumnailView.getLayoutParams();
-						    if (ratio_width > ratio_height){
-							    layoutParams.width = (int) (surfaceView_Height * aspectratio);
-							    layoutParams.height = surfaceView_Height;
-						    }else{
-						    	layoutParams.width = surfaceView_Width;
-						    	layoutParams.height = (int) (surfaceView_Width / aspectratio);
-						    }
-						    mThumnailView.setLayoutParams(layoutParams);
-
-				    		Canvas canvas=mThumnailView.getHolder().lockCanvas();
-				    		if (bm!=null) {
-				    			Rect f_rect=new Rect(0,0,bm.getWidth(),bm.getHeight());
-				    			Rect t_rect=new Rect(0,0,mThumnailView.getWidth()-1,mThumnailView.getHeight()-1);
-//				    			Log.v("","To width="+mThumnailView.getWidth()+", height="+mThumnailView.getHeight());
-//				    			Log.v("","From width="+f_rect.right+", height="+f_rect.bottom);
-				    			Paint paint=new Paint();
-				    			canvas.drawBitmap(bm, f_rect, t_rect, paint);
-				    		} else {
-				    			canvas.drawColor(Color.BLACK);
-				    		}
-				    		mThumnailView.getHolder().unlockCanvasAndPost(canvas);
-
-//							mUiHandler.post(new Runnable(){
-//								@Override
-//								public void run() {
-//								}
-//							});
-							mSurfaceView.setVisibility(SurfaceView.INVISIBLE);
-							
+							showVideoThumnail(mCurrentSelectedPos);
 						} else {
 							finish();
 						}
@@ -342,7 +297,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				playVideo(mFileList.get(mCurrentSelectedPos).file_name);
 				mIsVideoPlaying=true;
 				mIsVideoPausing=false;
-				mIbStartStop.setImageResource(R.drawable.player_stop);
+				mIbStartStop.setImageResource(R.drawable.player_pause);
 				
 				setNextPrevBtnStatus();
 			}
@@ -359,7 +314,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				playVideo(mFileList.get(mCurrentSelectedPos).file_name);
 				mIsVideoPlaying=true;
 				mIsVideoPausing=false;
-				mIbStartStop.setImageResource(R.drawable.player_stop);
+				mIbStartStop.setImageResource(R.drawable.player_pause);
 				
 				setNextPrevBtnStatus();
 				
@@ -388,14 +343,15 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mIbStartStop.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-//				Log.v("","mIsVideoPlaying="+mIsVideoPlaying+", mIsVideoPausing="+mIsVideoPausing);
+				Log.v("","mIsVideoPlaying="+mIsVideoPlaying+", mIsVideoPausing="+mIsVideoPausing);
 				if (mIsVideoPlaying) {
 					stopVideoPlayer();
 					mIbStartStop.setImageResource(R.drawable.player_play_enabled);
 					mSbPlayPosition.setEnabled(false);
+					mIsVideoPausing=true;
 				} else {
 					//Start
-					mIbStartStop.setImageResource(R.drawable.player_stop);
+					mIbStartStop.setImageResource(R.drawable.player_pause);
 					if (!mIsVideoPausing) {
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(true);
@@ -415,6 +371,50 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		});
 	};
 
+	@SuppressWarnings("unused")
+	private void showVideoThumnail(int pos) {
+		mThumnailView.setVisibility(SurfaceView.VISIBLE);
+		mTvTitle.setText(mFileList.get(pos).file_name);
+		mSbPlayPosition.setProgress(0);
+		mTvPlayPosition.setText("00:00");
+		setNextPrevBtnStatus();
+
+		Bitmap bm=ThumbnailUtils.createVideoThumbnail(mGp.videoFileDir+mFileList.get(pos).file_name, 
+				MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
+		
+		int surfaceView_Width = mThumnailView.getWidth();
+	    int surfaceView_Height = mThumnailView.getHeight();
+	    float video_Width = bm.getWidth();
+	    float video_Height = bm.getHeight();
+	    float ratio_width = surfaceView_Width/video_Width;
+	    float ratio_height = surfaceView_Height/video_Height;
+	    float aspectratio = video_Width/video_Height;
+	    android.view.ViewGroup.LayoutParams layoutParams = mThumnailView.getLayoutParams();
+	    if (ratio_width > ratio_height){
+		    layoutParams.width = (int) (surfaceView_Height * aspectratio);
+		    layoutParams.height = surfaceView_Height;
+	    }else{
+	    	layoutParams.width = surfaceView_Width;
+	    	layoutParams.height = (int) (surfaceView_Width / aspectratio);
+	    }
+	    mThumnailView.setLayoutParams(layoutParams);
+
+		Canvas canvas=mThumnailView.getHolder().lockCanvas();
+		if (bm!=null) {
+			Rect f_rect=new Rect(0,0,bm.getWidth(),bm.getHeight());
+			Rect t_rect=new Rect(0,0,mThumnailView.getWidth()-1,mThumnailView.getHeight()-1);
+//			Log.v("","To width="+mThumnailView.getWidth()+", height="+mThumnailView.getHeight());
+//			Log.v("","From width="+f_rect.right+", height="+f_rect.bottom);
+			Paint paint=new Paint();
+			canvas.drawBitmap(bm, f_rect, t_rect, paint);
+		} else {
+			canvas.drawColor(Color.BLACK);
+		}
+		mThumnailView.getHolder().unlockCanvasAndPost(canvas);
+
+		mSurfaceView.setVisibility(SurfaceView.INVISIBLE);
+	};
+	
 	private void stopVideoPlayer() {
 		if (mIsVideoPlaying) {
 			stopVideo();

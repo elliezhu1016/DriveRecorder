@@ -12,6 +12,16 @@
         android:layout_marginBottom="5dp"
         android:layout_marginTop="5dp" >
 
+        <CheckBox
+            android:id="@+id/file_list_select"
+            style="@style/check_box_style"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+	        android:focusable="false"
+	        android:focusableInTouchMode="false"
+            android:layout_marginRight="5dp" />
+        
         <ImageView
             android:id="@+id/file_list_thumnail"
             android:layout_width="64dp"

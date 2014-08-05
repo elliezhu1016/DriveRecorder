@@ -631,28 +631,16 @@ public class ActivityMain extends FragmentActivity {
 				for (int j = 0; j < parent.getChildCount(); j++)
 	                parent.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
 //	            view.setBackgroundColor(Color.DKGRAY);
-	            
-				FileListItem fli=mFileListAdapter.getItem(position);
-				Intent intent;
-				intent = new Intent(mContext,ActivityVideoPlayer.class);
-				intent.putExtra("fp",fli.file_name);
-				startActivityForResult(intent,1);
-
-	            
-//				String fid="";
-//	    		if (fli.file_name.lastIndexOf(".") > 0) {
-//	    			fid = fli.file_name.substring(fli.file_name.lastIndexOf(".") + 1,
-//	    					fli.file_name.length());
-//	    			fid=fid.toLowerCase();
-//	    		}
-//	    		String mt=MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
-//	    		if (mt != null) {
-//    				Intent intent;
-//    				intent = new Intent(android.content.Intent.ACTION_VIEW);
-//    				intent.setDataAndType(
-//    						Uri.parse("file://"+mGp.videoFileDir+fli.file_name), mt);
-//   					startActivity(intent);
-//	    		}
+	            if (isFileListSelected()) {
+	            	mFileListAdapter.getItem(position).isChecked=!mFileListAdapter.getItem(position).isChecked;
+	            	mFileListAdapter.notifyDataSetChanged();
+	            } else {
+					FileListItem fli=mFileListAdapter.getItem(position);
+					Intent intent;
+					intent = new Intent(mContext,ActivityVideoPlayer.class);
+					intent.putExtra("fp",fli.file_name);
+					startActivityForResult(intent,1);
+	            }
 			}
     	});
     	
@@ -660,16 +648,43 @@ public class ActivityMain extends FragmentActivity {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view,
 					final int position, long id) {
+				if (isFileListSelected()) createFileListContextMenuBySel();
+				else createFileListContextMenuByPos(position);
+				return true;
+			}
+    	});
+    };
+    
+    private boolean isFileListSelected() {
+    	boolean result=false;
+    	for (int i=0;i<mFileListAdapter.getCount();i++) {
+    		if (mFileListAdapter.getItem(i).isChecked) {
+    			result=true;
+    			break;
+    		}
+    	}
+    	return result;
+    };
+
+    private void createFileListContextMenuByPos(final int pos) {
+		String cfn=mFileListAdapter.getItem(pos).file_name;
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_file_delete)+
+				" "+cfn,R.drawable.menu_trash)
+	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
+			  @Override
+			  public void onClick(CharSequence menuTitle) {
+				  String fn=mFileListAdapter.getItem(pos).file_name;
+				  
 				  NotifyEvent ntfy=new NotifyEvent(mContext);
 				  ntfy.setListener(new NotifyEventListener(){
 					@Override
 					public void positiveResponse(Context c, Object[] o) {
-						String fp=mGp.videoFileDir+mFileListAdapter.getItem(position).file_name;
+						String fp=mGp.videoFileDir+mFileListAdapter.getItem(pos).file_name;
 				    	File lf=new File(fp);
-	        			mLog.addLogMsg("I", "File was deleted. name="+mFileListAdapter.getItem(position).file_name);
+	        			mLog.addLogMsg("I", "File was deleted. name="+mFileListAdapter.getItem(pos).file_name);
 				        deleteMediaStoreItem(fp);
 				        lf.delete();
-				    	mFileListAdapter.remove(mFileListAdapter.getItem(position));
+				    	mFileListAdapter.remove(mFileListAdapter.getItem(pos));
 				    	housekeepThumnailCache();
 				    	if (mFileListAdapter.getCount()==0) {
 				    		createDayList();
@@ -678,7 +693,6 @@ public class ActivityMain extends FragmentActivity {
 					        	hndl.postDelayed(new Runnable(){
 									@Override
 									public void run() {
-//							    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
 							    		createFileList(mDayListAdapter.getItem(0).day);
 									}
 					        	}, 100);
@@ -686,15 +700,111 @@ public class ActivityMain extends FragmentActivity {
 				    	} 
 					}
 					@Override
-					public void negativeResponse(Context c, Object[] o) {}
+					public void negativeResponse(Context c, Object[] o) {
+					}
 				  });
-				  mCommonDlg.showCommonDialog(true, "W", String.format(
-						  mContext.getString(R.string.msgs_main_ccmenu_day_delete_file_confirm),
-						  mFileListAdapter.getItem(position).file_name), "", ntfy);
-				
-				return true;
+				  mCommonDlg.showCommonDialog(true, "W", 
+						  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
+			  	}
+		});
+
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_select_all))
+	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
+	  		@Override
+	  		public void onClick(CharSequence menuTitle) {
+	  			selectAllFileListItem();
 			}
-    	});
+		});
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_unselect_all))
+  			.setOnClickListener(new CustomContextMenuOnClickListener() {
+			@Override
+			public void onClick(CharSequence menuTitle) {
+				unselectAllFileListItem();
+			}
+  		});
+		mCcMenu.createMenu();
+    };
+
+    private void selectAllFileListItem() {
+    	for(int i=0;i<mFileListAdapter.getCount();i++) mFileListAdapter.getItem(i).isChecked=true;
+    	mFileListAdapter.notifyDataSetChanged();
+    };
+
+    private void unselectAllFileListItem() {
+    	for(int i=0;i<mFileListAdapter.getCount();i++) mFileListAdapter.getItem(i).isChecked=false;
+    	mFileListAdapter.notifyDataSetChanged();
+    };
+
+    private void createFileListContextMenuBySel() {
+		String cfn="", csep="";
+		for (int i=0;i<mFileListAdapter.getCount();i++) {
+			if (mFileListAdapter.getItem(i).isChecked) {
+				cfn+=csep+mFileListAdapter.getItem(i).file_name;
+				csep=", ";
+			}
+		}
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_file_delete)+
+				" "+cfn,R.drawable.menu_trash)
+	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
+			  @Override
+			  public void onClick(CharSequence menuTitle) {
+				  String fn="", sep="";
+				  for (int i=0;i<mFileListAdapter.getCount();i++) {
+					  if (mFileListAdapter.getItem(i).isChecked) {
+						  fn+=sep+mFileListAdapter.getItem(i).file_name;
+						  sep="\n";
+					  }
+				  }
+				  
+				  NotifyEvent ntfy=new NotifyEvent(mContext);
+				  ntfy.setListener(new NotifyEventListener(){
+					@Override
+					public void positiveResponse(Context c, Object[] o) {
+						for (int i=mFileListAdapter.getCount()-1;i>=0;i--) {
+							String fp=mGp.videoFileDir+mFileListAdapter.getItem(i).file_name;
+					    	File lf=new File(fp);
+		        			mLog.addLogMsg("I", "File was deleted. name="+mFileListAdapter.getItem(i).file_name);
+					        deleteMediaStoreItem(fp);
+					        lf.delete();
+					    	mFileListAdapter.remove(mFileListAdapter.getItem(i));
+						}
+				    	housekeepThumnailCache();
+				    	if (mFileListAdapter.getCount()==0) {
+				    		createDayList();
+					        if (mDayListAdapter.getCount()>0) {
+					        	Handler hndl=new Handler();
+					        	hndl.postDelayed(new Runnable(){
+									@Override
+									public void run() {
+							    		createFileList(mDayListAdapter.getItem(0).day);
+									}
+					        	}, 100);
+					        }
+				    	} 
+					}
+					@Override
+					public void negativeResponse(Context c, Object[] o) {
+					}
+				  });
+				  mCommonDlg.showCommonDialog(true, "W", 
+						  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
+			  	}
+		});
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_select_all))
+  			.setOnClickListener(new CustomContextMenuOnClickListener() {
+	  		@Override
+	  		public void onClick(CharSequence menuTitle) {
+	  			selectAllFileListItem();
+			}
+  		});
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_unselect_all))
+			.setOnClickListener(new CustomContextMenuOnClickListener() {
+			@Override
+			public void onClick(CharSequence menuTitle) {
+				unselectAllFileListItem();
+			}
+		});
+		mCcMenu.createMenu();
     };
 
     private void createDayList() {

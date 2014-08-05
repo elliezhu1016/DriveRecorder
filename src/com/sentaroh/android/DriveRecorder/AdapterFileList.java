@@ -8,8 +8,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 
 public class AdapterFileList extends ArrayAdapter<FileListItem> {
 	private Context c;
@@ -30,7 +33,7 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
 	}
 
 	@Override
-	final public View getView(int position, View convertView, ViewGroup parent) {
+	final public View getView(final int position, View convertView, ViewGroup parent) {
 		ViewHolder holder;
 		
         View v = convertView;
@@ -42,6 +45,7 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
             holder.tv_file_size= (TextView) v.findViewById(R.id.file_list_item_size);
             holder.tv_duration= (TextView) v.findViewById(R.id.file_list_item_duration);
             holder.iv_thumnail=(ImageView) v.findViewById(R.id.file_list_thumnail);
+            holder.cb_sel=(CheckBox) v.findViewById(R.id.file_list_select);
             v.setTag(holder);
         } else {
         	holder= (ViewHolder)v.getTag();
@@ -51,16 +55,28 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
     	if (holder.tv_duration!=null) holder.tv_duration.setText(o.duration);
     	holder.tv_file_size.setText(o.file_size);
     	holder.iv_thumnail.setImageBitmap(o.thumbnail);
+    	
+   		holder.cb_sel.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				o.isChecked=isChecked;
+				notifyDataSetChanged();
+			}
+		});
+   		holder.cb_sel.setChecked(o.isChecked);
+    	
         return v;
 	};
 
 	class ViewHolder {
 		TextView tv_itemname, tv_file_size, tv_duration;
 		ImageView iv_thumnail;
-	}
+		CheckBox cb_sel;
+	};
 }
 
 class FileListItem {
+	public boolean isChecked=false;
 	public String file_name="";
 	public String duration="00:00";
 	public String file_size="";
