@@ -38,6 +38,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
@@ -105,19 +106,56 @@ public class ActivityMain extends FragmentActivity {
 		mRestartStatus=2;
 	};
 
+	@Override
+	public void onConfigurationChanged(final Configuration newConfig) {
+	    // Ignore orientation change to keep activity from restarting
+	    super.onConfigurationChanged(newConfig);
+	    mLog.addDebugMsg(1,"I","onConfigurationChanged Entered, orientation="+newConfig.orientation);
+	    
+	    int ps_dl_y=0;
+	    int pos_dl_x=mDayListView.getFirstVisiblePosition();
+		if (mDayListView.getChildAt(0)!=null) ps_dl_y=mDayListView.getChildAt(0).getTop();
+
+	    int ps_fl_y=0;
+	    int pos_fl_x=mFileListView.getFirstVisiblePosition();
+		if (mFileListView.getChildAt(0)!=null) ps_fl_y=mFileListView.getChildAt(0).getTop();
+	    
+	    initView();
+	    
+	    mDayListView.setAdapter(mDayListAdapter);
+	    mFileListView.setAdapter(mFileListAdapter);
+	    
+	    mDayListView.setSelectionFromTop(pos_dl_x, ps_dl_y);
+	    mFileListView.setSelectionFromTop(pos_fl_x, ps_fl_y);
+
+        setMainListener();
+        setDayListListener();
+        setFileListListener();
+
+	};
+
+	private void initView() {
+		mLog.addDebugMsg(1,"I","initView Entered");
+		setContentView(R.layout.activity_main);
+        mMainUiView=(LinearLayout)findViewById(R.id.main_ui_view);
+        
+        mDayListView=(ListView)findViewById(R.id.main_day_listview);
+        mFileListView=(ListView)findViewById(R.id.main_file_listview);
+	}
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         mUiHandler=new Handler();
         mGp=(GlobalParameters) this.getApplication();
         mGp.initSettingParms(this);
         mGp.loadSettingParms(this);
         
         mContext=this.getApplicationContext();
-        
-        mMainUiView=(LinearLayout)findViewById(R.id.main_ui_view);
-        
+
+        if (mGp.settingsDeviceOrientationPortrait) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        else setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
         mActivity=this;
 //        mGp.surfaceView = (SurfaceView) findViewById(R.id.surfaceView1);
 //        mGp.surfaceHolder = mGp.surfaceView.getHolder();
@@ -133,14 +171,10 @@ public class ActivityMain extends FragmentActivity {
 
         loadThumnailList();
         
-        if (mGp.settingsDeviceOrientationPortrait) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        else setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        
         Intent intent = new Intent(this, RecorderService.class);
         startService(intent);
 
-        mDayListView=(ListView)findViewById(R.id.main_day_listview);
-        mFileListView=(ListView)findViewById(R.id.main_file_listview);
+        initView();
         
     };
     
@@ -394,6 +428,7 @@ public class ActivityMain extends FragmentActivity {
 	
 	protected void onActivityResult(int rc, int resultCode, Intent data) {
 		if (rc==0) applySettingParms();
+		else if (rc==1) refreshFileList();
 	};
 	
 	private void applySettingParms() {
@@ -410,6 +445,37 @@ public class ActivityMain extends FragmentActivity {
 			intent.setDataAndType(Uri.parse("file://"+mLog.getLogFilePath()), "text/plain");
 			startActivity(intent);
 		}
+	};
+	
+	private void refreshFileList() {
+		mLog.addDebugMsg(1, "I","refreshFileList entered");
+		
+	    int ps_dl_y=0;
+	    int pos_dl_x=mDayListView.getFirstVisiblePosition();
+		if (mDayListView.getChildAt(0)!=null) ps_dl_y=mDayListView.getChildAt(0).getTop();
+
+	    int ps_fl_y=0;
+	    int pos_fl_x=mFileListView.getFirstVisiblePosition();
+		if (mFileListView.getChildAt(0)!=null) ps_fl_y=mFileListView.getChildAt(0).getTop();
+	    
+		createDayList();
+		boolean found=false;
+		for (int i=0;i<mDayListAdapter.getCount();i++) {
+			if (mCurrentSelectedDayList.equals(mDayListAdapter.getItem(i).day)) {
+				found=true;
+				break;
+			}
+		}
+		if (found) createFileList(mCurrentSelectedDayList);
+		else {
+			if (mDayListAdapter.getCount()>0) createFileList(mDayListAdapter.getItem(0).day);
+			else {
+				mFileListAdapter.clear();
+				mFileListAdapter.notifyDataSetChanged();
+			}
+		}
+		mDayListView.setSelectionFromTop(pos_dl_x, ps_dl_y);
+		mFileListView.setSelectionFromTop(pos_fl_x, ps_fl_y);
 	};
 
     private void setMainListener() {
@@ -447,8 +513,11 @@ public class ActivityMain extends FragmentActivity {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long id) {
-				for (int j = 0; j < parent.getChildCount(); j++)
-	                parent.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
+				for (int j = 0; j < parent.getChildCount(); j++) {
+					parent.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
+					parent.getChildAt(j).setSelected(false);
+				}
+	            view.setSelected(true);
 //	            view.setBackgroundColor(Color.DKGRAY);
 				createFileList(mDayListAdapter.getItem(position).day);
 			}
@@ -567,7 +636,7 @@ public class ActivityMain extends FragmentActivity {
 				Intent intent;
 				intent = new Intent(mContext,ActivityVideoPlayer.class);
 				intent.putExtra("fp",fli.file_name);
-				startActivity(intent);
+				startActivityForResult(intent,1);
 
 	            
 //				String fid="";
