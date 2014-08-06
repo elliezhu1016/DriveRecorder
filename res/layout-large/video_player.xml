@@ -27,7 +27,7 @@
             android:id="@+id/video_player_dlg_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <LinearLayout
             android:id="@+id/video_player_dlg_bottom_panel"
@@ -40,8 +40,8 @@
 
             <ImageButton
                 android:id="@+id/video_player_dlg_prev"
-	            android:layout_width="48dp"
-	            android:layout_height="48dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/prev_file_enabled" />
 
@@ -52,8 +52,8 @@
 
             <ImageButton
                 android:id="@+id/video_player_dlg_start_stop"
-	            android:layout_width="48dp"
-	            android:layout_height="48dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/player_play_enabled" />
 
@@ -64,8 +64,8 @@
 
             <ImageButton
                 android:id="@+id/video_player_dlg_next"
-	            android:layout_width="48dp"
-	            android:layout_height="48dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/next_file_enabled" />
         </LinearLayout>
@@ -96,16 +96,16 @@
 
             <ImageButton
                 android:id="@+id/video_player_dlg_delete"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/menu_trash" />
         </LinearLayout>
 
         <ImageButton
             android:id="@+id/video_player_dlg_share"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:scaleType="centerCrop"

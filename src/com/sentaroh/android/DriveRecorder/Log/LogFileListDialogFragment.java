@@ -323,7 +323,7 @@ public class LogFileListDialogFragment extends DialogFragment{
     	CustomContextMenu ccMenu=new CustomContextMenu(mFragment.getResources(), mFragment.getFragmentManager());
     	
     	if (lfm_adapter.getItem(pos).isCurrentLogFile) {
-        	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_archive))
+        	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_archive),android.R.drawable.ic_menu_save)
         	.setOnClickListener(new CustomContextMenuOnClickListener(){
     			@Override
     			public void onClick(CharSequence menuTitle) {
@@ -347,7 +347,7 @@ public class LogFileListDialogFragment extends DialogFragment{
 				startActivity(intent);
 			}
     	});
-    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_send),R.drawable.share)
+    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_send),android.R.drawable.ic_menu_share)
     	.setOnClickListener(new CustomContextMenuOnClickListener(){
 			@Override
 			public void onClick(CharSequence menuTitle) {
@@ -369,7 +369,7 @@ public class LogFileListDialogFragment extends DialogFragment{
     private void createContextMenuMultiple(final LogFileListAdapter lfm_adapter) {
     	CustomContextMenu ccMenu=new CustomContextMenu(mFragment.getResources(), mFragment.getFragmentManager());
     	
-    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_send),R.drawable.share)
+    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_send),android.R.drawable.ic_menu_share)
     	.setOnClickListener(new CustomContextMenuOnClickListener(){
 			@Override
 			public void onClick(CharSequence menuTitle) {

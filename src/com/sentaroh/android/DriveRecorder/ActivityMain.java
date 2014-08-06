@@ -527,8 +527,9 @@ public class ActivityMain extends FragmentActivity {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view,
 					final int position, long id) {
-				mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_day_delete)+
-						" "+mDayListAdapter.getItem(position).day,R.drawable.menu_trash)
+				mCcMenu.addMenuItem(String.format(
+					mContext.getString(R.string.msgs_main_ccmenu_day_delete),mDayListAdapter.getItem(position).day),
+					R.drawable.menu_trash)
 			  		.setOnClickListener(new CustomContextMenuOnClickListener() {
 					  @Override
 					  public void onClick(CharSequence menuTitle) {
@@ -707,6 +708,19 @@ public class ActivityMain extends FragmentActivity {
 						  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
 			  	}
 		});
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_share), android.R.drawable.ic_menu_share)
+		.setOnClickListener(new CustomContextMenuOnClickListener() {
+			@Override
+			public void onClick(CharSequence menuTitle) {
+			    Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+			    Uri screenshotUri = Uri.parse(mGp.videoFileDir+mFileListAdapter.getItem(pos).file_name);
+			     
+			    sharingIntent.setType("video/mp4");
+			    sharingIntent.putExtra(Intent.EXTRA_STREAM, screenshotUri);
+			    startActivity(Intent.createChooser(sharingIntent,
+			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
+			}
+		});
 
 		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_select_all))
 	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
@@ -790,6 +804,28 @@ public class ActivityMain extends FragmentActivity {
 						  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
 			  	}
 		});
+		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_share), android.R.drawable.ic_menu_share)
+		.setOnClickListener(new CustomContextMenuOnClickListener() {
+			@Override
+			public void onClick(CharSequence menuTitle) {
+			    Intent intent = new Intent();
+			    intent.setAction(Intent.ACTION_SEND_MULTIPLE);
+			    intent.putExtra(Intent.EXTRA_SUBJECT, "Add any subject");
+			    intent.setType("video/mp4");
+
+			    ArrayList<Uri> files = new ArrayList<Uri>();
+				for (int i=0;i<mFileListAdapter.getCount();i++) {
+					if (mFileListAdapter.getItem(i).isChecked) {
+						Uri uri = Uri.parse(mGp.videoFileDir+mFileListAdapter.getItem(i).file_name);
+					    files.add(uri);
+					}
+				}
+
+			    intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files); 
+			    startActivity(Intent.createChooser(intent,
+			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
+			}
+		});
 		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_select_all))
   			.setOnClickListener(new CustomContextMenuOnClickListener() {
 	  		@Override
@@ -804,9 +840,10 @@ public class ActivityMain extends FragmentActivity {
 				unselectAllFileListItem();
 			}
 		});
+		
 		mCcMenu.createMenu();
     };
-
+    
     private void createDayList() {
     	mLog.addDebugMsg(1, "I","createDayList entered");
     	ArrayList<DayListItem> fl=new ArrayList<DayListItem>();

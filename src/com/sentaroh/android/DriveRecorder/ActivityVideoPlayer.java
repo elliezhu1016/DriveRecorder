@@ -14,6 +14,7 @@ import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -26,6 +27,7 @@ import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.media.MediaPlayer.OnVideoSizeChangedListener;
 import android.media.ThumbnailUtils;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
@@ -70,6 +72,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private ImageButton mIbStartStop=null;
 	private ImageButton mIbNextFile=null;
 	private ImageButton mIbDeleteFile=null;
+	private ImageButton mIbShare=null;
 	private TextView mTvTitle=null;
 //	private LinearLayout mLayoutTop=null;
 //	private LinearLayout mLayoutBottom=null;
@@ -120,6 +123,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mIbStartStop=(ImageButton)findViewById(R.id.video_player_dlg_start_stop);
 		mIbNextFile=(ImageButton)findViewById(R.id.video_player_dlg_next);
 		mIbDeleteFile=(ImageButton)findViewById(R.id.video_player_dlg_delete);
+		mIbShare=(ImageButton)findViewById(R.id.video_player_dlg_share);
 		mTvTitle=(TextView)findViewById(R.id.video_player_dlg_title);
 //		mLayoutTop=(LinearLayout)findViewById(R.id.video_player_dlg_top_panel);
 //		mLayoutBottom=(LinearLayout)findViewById(R.id.video_player_dlg_bottom_panel);
@@ -286,6 +290,19 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			}
 		});
 
+		mIbShare.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+			    Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+			    Uri screenshotUri = Uri.parse(mGp.videoFileDir+mFileList.get(mCurrentSelectedPos).file_name);
+			     
+			    sharingIntent.setType("video/mp4");
+			    sharingIntent.putExtra(Intent.EXTRA_STREAM, screenshotUri);
+			    startActivity(Intent.createChooser(sharingIntent,
+			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
+			}
+		});
+		
 		mIbPrevFile.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -371,7 +388,6 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		});
 	};
 
-	@SuppressWarnings("unused")
 	private void showVideoThumnail(int pos) {
 		mThumnailView.setVisibility(SurfaceView.VISIBLE);
 		mTvTitle.setText(mFileList.get(pos).file_name);
@@ -381,26 +397,26 @@ public class ActivityVideoPlayer extends FragmentActivity{
 
 		Bitmap bm=ThumbnailUtils.createVideoThumbnail(mGp.videoFileDir+mFileList.get(pos).file_name, 
 				MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
-		
-		int surfaceView_Width = mThumnailView.getWidth();
-	    int surfaceView_Height = mThumnailView.getHeight();
-	    float video_Width = bm.getWidth();
-	    float video_Height = bm.getHeight();
-	    float ratio_width = surfaceView_Width/video_Width;
-	    float ratio_height = surfaceView_Height/video_Height;
-	    float aspectratio = video_Width/video_Height;
-	    android.view.ViewGroup.LayoutParams layoutParams = mThumnailView.getLayoutParams();
-	    if (ratio_width > ratio_height){
-		    layoutParams.width = (int) (surfaceView_Height * aspectratio);
-		    layoutParams.height = surfaceView_Height;
-	    }else{
-	    	layoutParams.width = surfaceView_Width;
-	    	layoutParams.height = (int) (surfaceView_Width / aspectratio);
-	    }
-	    mThumnailView.setLayoutParams(layoutParams);
 
 		Canvas canvas=mThumnailView.getHolder().lockCanvas();
 		if (bm!=null) {
+			int surfaceView_Width = mThumnailView.getWidth();
+		    int surfaceView_Height = mThumnailView.getHeight();
+		    float video_Width = bm.getWidth();
+		    float video_Height = bm.getHeight();
+		    float ratio_width = surfaceView_Width/video_Width;
+		    float ratio_height = surfaceView_Height/video_Height;
+		    float aspectratio = video_Width/video_Height;
+		    android.view.ViewGroup.LayoutParams layoutParams = mThumnailView.getLayoutParams();
+		    if (ratio_width > ratio_height){
+			    layoutParams.width = (int) (surfaceView_Height * aspectratio);
+			    layoutParams.height = surfaceView_Height;
+		    }else{
+		    	layoutParams.width = surfaceView_Width;
+		    	layoutParams.height = (int) (surfaceView_Width / aspectratio);
+		    }
+		    mThumnailView.setLayoutParams(layoutParams);
+		    
 			Rect f_rect=new Rect(0,0,bm.getWidth(),bm.getHeight());
 			Rect t_rect=new Rect(0,0,mThumnailView.getWidth()-1,mThumnailView.getHeight()-1);
 //			Log.v("","To width="+mThumnailView.getWidth()+", height="+mThumnailView.getHeight());
