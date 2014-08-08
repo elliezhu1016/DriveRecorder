@@ -59,10 +59,12 @@
 
         <receiver 
     	    android:name=".RecorderReceiver"
-    	    android:exported="false">
+    	    android:exported="true">
 			<intent-filter>
 			    <action android:name="com.sentaroh.android.DriveRecorder.WIDGET_RECORDER_TOGGLE_INTENT" />
 			    <action android:name="android.media.VOLUME_CHANGED_ACTION" />
+			    <action android:name="android.intent.action.USER_PRESENT"/>
+			    <action android:name="com.sentaroh.android.DriveRecorder.ACTION_SERVICE_HEARTBEAT"/>
 			</intent-filter>
 		</receiver>
 				

@@ -46,21 +46,25 @@ public class GlobalParameters extends Application{
 	
 	public int settingsVideoBitRate=1024*1024;
 
-	public int settingsRecordVideoSize=RECORD_VIDEO_QUALITY_LOW;//1280_720;//720_480;
+	public String settingsRecordVideoQuality=RECORD_VIDEO_QUALITY_LOW;//1280_720;//720_480;
 	
 	public boolean settingsVideoPlaybackKeepAspectRatio=false;
 	
-	public int settingsVideoFrameRate=30;
+//	public int settingsVideoFrameRate=30;
     
-	public String videoFileDir="", videoFileNamePrefix="drive_record_";
+	public String videoRecordDir="", videoFileNamePrefix="drive_record_", videoArchiveDir="";;
 	public String currentRecordedFileName="";
+	
+	public int settingHeartBeatIntervalTime=1000*60*1;
 
 	public void loadSettingParms(Context c) {
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
 		String vf=Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/videos/";
 		
-		videoFileDir=
+		videoArchiveDir=Environment.getExternalStorageDirectory().toString()+"/DriveRecorder/archive/";
+		
+		videoRecordDir=
 				prefs.getString(c.getString(R.string.settings_video_folder),vf);
 		settingsDebugEnabled=
 				prefs.getBoolean(c.getString(R.string.settings_debug_enable),false);
@@ -85,8 +89,8 @@ public class GlobalParameters extends Application{
 		settingsDeviceOrientationPortrait=
 				prefs.getBoolean(c.getString(R.string.settings_device_orientation_portrait),false);
 
-		settingsRecordVideoSize=Integer.parseInt(
-				prefs.getString(c.getString(R.string.settings_video_record_size),"0"));
+		settingsRecordVideoQuality=
+				prefs.getString(c.getString(R.string.settings_video_record_quality),RECORD_VIDEO_QUALITY_LOW);
 
 		
 	};

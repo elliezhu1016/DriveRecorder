@@ -3,19 +3,21 @@ package com.sentaroh.android.DriveRecorder;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class AdapterDayList extends ArrayAdapter<DayListItem> {
+public class AdapterDayList extends ArrayAdapter<DayFolderListItem> {
 	private Context c;
 	private int id;
-	private ArrayList<DayListItem>items;
+	private ArrayList<DayFolderListItem>items;
 	
 	public AdapterDayList(Context context, 
-			int textViewResourceId, ArrayList<DayListItem> objects) {
+			int textViewResourceId, ArrayList<DayFolderListItem> objects) {
 		super(context, textViewResourceId, objects);
 		c = context;
 		id = textViewResourceId;
@@ -38,22 +40,28 @@ public class AdapterDayList extends ArrayAdapter<DayListItem> {
             holder=new ViewHolder();
             holder.tv_itemname= (TextView) v.findViewById(R.id.day_list_item_name);
 //            holder.tv_count= (TextView) v.findViewById(R.id.day_list_item_count);
+            holder.ll_view=(LinearLayout) v.findViewById(R.id.day_list_item_view);
             v.setTag(holder);
         } else {
         	holder= (ViewHolder)v.getTag();
         }
-        final DayListItem o = items.get(position);
-    	holder.tv_itemname.setText(o.day);
+        final DayFolderListItem o = items.get(position);
+    	holder.tv_itemname.setText(o.folder_name);
+    	if (o.isSelected) holder.ll_view.setBackgroundColor(Color.DKGRAY);
+    	else holder.ll_view.setBackgroundColor(Color.TRANSPARENT);
 //    	holder.tv_count.setText(o.no_of_file);
         return v;
 	};
 
 	class ViewHolder {
 		TextView tv_itemname, tv_count;
+		LinearLayout ll_view;
 	}
 }
 
-class DayListItem {
-	public String day="";
+class DayFolderListItem {
+	public boolean isSelected=false;
+	public boolean archive_folder=false;
+	public String folder_name="";
 	public String no_of_file="";
 }

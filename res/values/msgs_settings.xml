@@ -43,17 +43,19 @@
         <item>300</item>
     </string-array>
 
-	<string name="settings_video_record_size_title">ビデオ品質</string>
-	<string name="settings_video_record_size_summary">現在の設定=</string>
-	<string name="settings_video_record_size_dialog_title">ビデオ品質の選択</string>
-	<string name="settings_video_record_size">settings_video_record_size</string>
-	<string-array name="settings_video_record_size_list_entries">
+	<string name="settings_video_record_quality_title">ビデオ品質</string>
+	<string name="settings_video_record_quality_summary">現在の設定=</string>
+	<string name="settings_video_record_quality_dialog_title">ビデオ品質の選択</string>
+	<string name="settings_video_record_quality">settings_video_record_quality</string>
+	<string-array name="settings_video_record_quality_list_entries">
         <item>低</item>
+        <item>中</item>
         <item>高</item>
     </string-array>
-	<string-array name="settings_video_record_size_list_values">
-        <item>0</item>
-        <item>1</item>
+	<string-array name="settings_video_record_quality_list_values">
+        <item>LOW</item>
+        <item>MEDIUM</item>
+        <item>HIGH</item>
     </string-array>
 		
 	<string name="settings_video_playback_keep_aspect_ratio">settings_video_playback_keep_aspect_ratio</string>

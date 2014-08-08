@@ -111,6 +111,15 @@
             android:scaleType="centerCrop"
             android:src="@drawable/share" />
 
+        <ImageButton
+            android:id="@+id/video_player_dlg_archive"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:scaleType="centerCrop"
+            android:src="@drawable/archive" />
+        
     </RelativeLayout>
 
 </FrameLayout>

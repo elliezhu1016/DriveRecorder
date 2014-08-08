@@ -13,6 +13,8 @@ import com.sentaroh.android.Utilities.NotifyEvent.NotifyEventListener;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 
+import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -22,12 +24,15 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.media.MediaPlayer;
+import android.media.MediaScannerConnection;
 import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.media.MediaPlayer.OnVideoSizeChangedListener;
+import android.media.MediaScannerConnection.OnScanCompletedListener;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
@@ -39,6 +44,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.MimeTypeMap;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -74,9 +80,12 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private ImageButton mIbDeleteFile=null;
 	private ImageButton mIbShare=null;
 	private TextView mTvTitle=null;
+	private ImageButton mIbArchive=null;
 //	private LinearLayout mLayoutTop=null;
 //	private LinearLayout mLayoutBottom=null;
 
+	private boolean mArchiveFolder=false;
+	private String mVideoFolder="";
     
 	@Override  
 	protected void onSaveInstanceState(Bundle outState) {  
@@ -124,6 +133,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mIbNextFile=(ImageButton)findViewById(R.id.video_player_dlg_next);
 		mIbDeleteFile=(ImageButton)findViewById(R.id.video_player_dlg_delete);
 		mIbShare=(ImageButton)findViewById(R.id.video_player_dlg_share);
+		mIbArchive=(ImageButton)findViewById(R.id.video_player_dlg_archive);
 		mTvTitle=(TextView)findViewById(R.id.video_player_dlg_title);
 //		mLayoutTop=(LinearLayout)findViewById(R.id.video_player_dlg_top_panel);
 //		mLayoutBottom=(LinearLayout)findViewById(R.id.video_player_dlg_bottom_panel);
@@ -173,7 +183,11 @@ public class ActivityVideoPlayer extends FragmentActivity{
     };
 
 	private void initFileList() {
-    	File lf=new File(mGp.videoFileDir);
+		mArchiveFolder=getIntent().getBooleanExtra("archive",false);
+		mVideoFolder=getIntent().getStringExtra("fd");
+    	String s_fn=getIntent().getStringExtra("fn");
+    	Log.v("","archive="+mArchiveFolder+", fd="+mVideoFolder+", fn="+s_fn);
+    	File lf=new File(mVideoFolder);
     	File[] tfl=lf.listFiles();
     	if (tfl!=null && tfl.length>0) {
     		for (int i=0;i<tfl.length;i++) {
@@ -190,10 +204,9 @@ public class ActivityVideoPlayer extends FragmentActivity{
     		});
     	}
 
-    	String s_fp=getIntent().getStringExtra("fp");
 //    	Log.v("","fp="+s_fp);
 		for (int i=0;i<mFileList.size();i++) {
-			if (s_fp.equals(mFileList.get(i).file_name)) {
+			if (s_fn.equals(mFileList.get(i).file_name)) {
 				mCurrentSelectedPos=i;
 				break;
 			}
@@ -269,9 +282,9 @@ public class ActivityVideoPlayer extends FragmentActivity{
 						
 						FileListItem fli=mFileList.get(mCurrentSelectedPos);
 						mFileList.remove(mCurrentSelectedPos);
-						File lf=new File(mGp.videoFileDir+fli.file_name);
+						File lf=new File(mVideoFolder+fli.file_name);
 						lf.delete();
-						
+						deleteMediaStoreItem(mVideoFolder+fli.file_name);
 //						Log.v("","size="+mFileList.size()+", pos="+mCurrentSelectedPos);
 						if (mFileList.size()>0) {
 							if ((mCurrentSelectedPos+1)>mFileList.size()) mCurrentSelectedPos--;
@@ -294,7 +307,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			@Override
 			public void onClick(View v) {
 			    Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-			    Uri screenshotUri = Uri.parse(mGp.videoFileDir+mFileList.get(mCurrentSelectedPos).file_name);
+			    Uri screenshotUri = Uri.parse(mVideoFolder+mFileList.get(mCurrentSelectedPos).file_name);
 			     
 			    sharingIntent.setType("video/mp4");
 			    sharingIntent.putExtra(Intent.EXTRA_STREAM, screenshotUri);
@@ -302,7 +315,51 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
 			}
 		});
-		
+
+		if (mArchiveFolder) mIbArchive.setVisibility(ImageButton.GONE);
+		mIbArchive.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				NotifyEvent ntfy=new NotifyEvent(mContext);
+				ntfy.setListener(new NotifyEventListener(){
+					@Override
+					public void positiveResponse(Context c, Object[] o) {
+						String fp=mGp.videoRecordDir+mFileList.get(mCurrentSelectedPos).file_name;
+						String afp=mGp.videoArchiveDir+mFileList.get(mCurrentSelectedPos).file_name;
+						File tlf=new File(mGp.videoArchiveDir);
+						if (!tlf.exists()) tlf.mkdirs();
+						
+				    	File lf=new File(fp);
+				    	boolean result=lf.renameTo(new File(afp));
+				    	if (result) {
+		        			mLog.addLogMsg("I", "File was archived. name="+mFileList.get(mCurrentSelectedPos).file_name);
+					        deleteMediaStoreItem(fp);
+					    	mFileList.remove(mCurrentSelectedPos);
+					    	scanMediaStoreFile(afp);
+					    	
+							if (mFileList.size()>0) {
+								if ((mCurrentSelectedPos+1)>mFileList.size()) mCurrentSelectedPos--;
+								showVideoThumnail(mCurrentSelectedPos);
+							} else {
+								finish();
+							}
+				    	} else {
+				    		mLog.addLogMsg("E", "File can not archived. name="+mFileList.get(mCurrentSelectedPos).file_name);
+							mCommonDlg.showCommonDialog(false, "E", 
+									  mContext.getString(R.string.msgs_main_ccmenu_file_archive_error), 
+									  mFileList.get(mCurrentSelectedPos).file_name, null);
+				    	}
+					}
+					@Override
+					public void negativeResponse(Context c, Object[] o) {
+					}
+				});
+				mCommonDlg.showCommonDialog(true, "W", 
+						  mContext.getString(R.string.msgs_main_ccmenu_file_archive_file_confirm), 
+						  mFileList.get(mCurrentSelectedPos).file_name, ntfy);
+			}
+		});
+
 		mIbPrevFile.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -342,10 +399,12 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mSbPlayPosition.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
 			@Override
 			public void onProgressChanged(SeekBar arg0, int progress, boolean arg2) {
-				if (mIsVideoPlaying) {
+//				Log.v("","seekTo="+progress+", max="+mSbPlayPosition.getMax()+", arg2="+arg2);
+				if (arg2) mMediaPlayer.seekTo(progress);
+//				if (mIsVideoPlaying) {
 //					Log.v("","seekTo="+progress+", max="+mSbPlayPosition.getMax()+", arg2="+arg2);
-					if (arg2) mMediaPlayer.seekTo(progress);
-				} 
+//					if (arg2) mMediaPlayer.seekTo(progress);
+//				} 
 			}
 			@Override
 			public void onStartTrackingTouch(SeekBar arg0) {
@@ -364,7 +423,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				if (mIsVideoPlaying) {
 					stopVideoPlayer();
 					mIbStartStop.setImageResource(R.drawable.player_play_enabled);
-					mSbPlayPosition.setEnabled(false);
+//					mSbPlayPosition.setEnabled(false);
 					mIsVideoPausing=true;
 				} else {
 					//Start
@@ -390,12 +449,13 @@ public class ActivityVideoPlayer extends FragmentActivity{
 
 	private void showVideoThumnail(int pos) {
 		mThumnailView.setVisibility(SurfaceView.VISIBLE);
-		mTvTitle.setText(mFileList.get(pos).file_name);
+		if (mArchiveFolder) mTvTitle.setText(mContext.getString(R.string.msgs_main_folder_type_archive)+" "+mFileList.get(pos).file_name);
+		else mTvTitle.setText(mContext.getString(R.string.msgs_main_folder_type_record)+" "+mFileList.get(pos).file_name);
 		mSbPlayPosition.setProgress(0);
 		mTvPlayPosition.setText("00:00");
 		setNextPrevBtnStatus();
 
-		Bitmap bm=ThumbnailUtils.createVideoThumbnail(mGp.videoFileDir+mFileList.get(pos).file_name, 
+		Bitmap bm=ThumbnailUtils.createVideoThumbnail(mVideoFolder+mFileList.get(pos).file_name, 
 				MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
 
 		Canvas canvas=mThumnailView.getHolder().lockCanvas();
@@ -433,7 +493,9 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	
 	private void stopVideoPlayer() {
 		if (mIsVideoPlaying) {
-			stopVideo();
+			mMediaPlayer.pause();
+			mIsVideoPlaying=false;
+			mIsVideoPausing=true;
 			mTcPlayer.setDisabled();
 			synchronized(mTcPlayer) {
 				mTcPlayer.notify();
@@ -443,7 +505,6 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			mIsVideoPausing=false;
 		} 
 	};
 	
@@ -480,7 +541,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 //			}
 //		}, 2000);
 		try {
-			mTvTitle.setText(fp);
+			if (mArchiveFolder) mTvTitle.setText(mContext.getString(R.string.msgs_main_folder_type_archive)+" "+fp);
+			else mTvTitle.setText(mContext.getString(R.string.msgs_main_folder_type_record)+" "+fp);
 			  
 			mMediaPlayer.setOnBufferingUpdateListener(new OnBufferingUpdateListener(){
 				@Override
@@ -505,7 +567,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					mIsVideoPausing=false;
 					stopMediaPlayer();
 					mIbStartStop.setImageResource(R.drawable.player_play_enabled);
-					mSbPlayPosition.setEnabled(false);
+//					mSbPlayPosition.setEnabled(false);
 				}
 			});
 			mMediaPlayer.setOnPreparedListener(new OnPreparedListener(){
@@ -550,7 +612,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			});
 
 			mIsVideoPlaying=true;
-			mMediaPlayer.setDataSource(mGp.videoFileDir+fp);
+			mMediaPlayer.setDataSource(mVideoFolder+fp);
 			mMediaPlayer.setDisplay(mSurfaceHolder);
 			mMediaPlayer.prepareAsync();
 			
@@ -620,13 +682,6 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mPlayerThread.start();		
 	};
 
-	private void stopVideo() {
-//		stopMediaPlayer();
-		mMediaPlayer.pause();
-		mIsVideoPlaying=false;
-		mIsVideoPausing=true;
-	};
-	
 	private void stopMediaPlayer() {
 		mIsVideoPlaying=false;
 		mIsVideoPausing=false;
@@ -635,7 +690,62 @@ public class ActivityVideoPlayer extends FragmentActivity{
 //			mMediaPlayer.release();
 		} catch(IllegalStateException e) {
 		}
-	}
+	};
+
+    private void scanMediaStoreFile(String fp) {
+    	String[] paths = new String[] {fp};
+    	MediaScannerConnection.scanFile(getApplicationContext(), paths, null, mOnScanCompletedListener);
+    };
+    
+	private OnScanCompletedListener mOnScanCompletedListener=new OnScanCompletedListener(){
+		@Override
+		public void onScanCompleted(String path, Uri uri) {
+			mLog.addDebugMsg(1,"I", "Scan completed path="+path+", uri="+uri);
+		}
+	};
+
+	private int deleteMediaStoreItem(String fp) {
+		int dc_image=0, dc_audio=0, dc_video=0, dc_files=0;
+		String mt=isMediaFile(fp);
+		if (mt!=null && 
+				(mt.startsWith("audio") ||
+				 mt.startsWith("video") ||
+				 mt.startsWith("image") )) {
+	    	ContentResolver cri = mContext.getContentResolver();
+	    	ContentResolver cra = mContext.getContentResolver();
+	    	ContentResolver crv = mContext.getContentResolver();
+	    	ContentResolver crf = mContext.getContentResolver();
+	    	dc_image=cri.delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+	          		MediaStore.Images.Media.DATA + "=?", new String[]{fp} );
+	       	dc_audio=cra.delete(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+	           		MediaStore.Audio.Media.DATA + "=?", new String[]{fp} );
+	       	dc_video=crv.delete(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+	           		MediaStore.Video.Media.DATA + "=?", new String[]{fp} );
+	        if(Build.VERSION.SDK_INT >= 11) {
+	        	dc_files=crf.delete(MediaStore.Files.getContentUri("external"), 
+	          		MediaStore.Files.FileColumns.DATA + "=?", new String[]{fp} );
+	        }
+//	        Log.v("","fp="+fp);
+		} else {
+//       		sendDebugLogMsg(1,"I","deleMediaStoreItem not MediaStore library. fn="+
+//	       				fp+"");
+		}
+		return dc_image+dc_audio+dc_video+dc_files;
+	};
+
+	@SuppressLint("DefaultLocale")
+	private static String isMediaFile(String fp) {
+		String mt=null;
+		String fid="";
+		if (fp.lastIndexOf(".")>0) {
+			fid=fp.substring(fp.lastIndexOf(".")+1,fp.length());
+			fid=fid.toLowerCase();
+		}
+		mt=MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
+		if (mt==null) return "";
+		else return mt;
+	};
+
 
 }
 

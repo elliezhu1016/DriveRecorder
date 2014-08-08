@@ -77,6 +77,7 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
 
 class FileListItem {
 	public boolean isChecked=false;
+	public boolean archive_folder=false;
 	public String file_name="";
 	public String duration="00:00";
 	public String file_size="";
