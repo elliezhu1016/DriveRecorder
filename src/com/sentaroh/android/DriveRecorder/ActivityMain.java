@@ -57,7 +57,6 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -344,11 +343,18 @@ public class ActivityMain extends FragmentActivity {
 			case R.id.menu_top_refresh:
 				mCurrentSelectedDayList="";
 				createDayList();
-				setDayListUnselected();
-				mDayListAdapter.getItem(0).isSelected=true;
-				mDayListAdapter.notifyDataSetChanged();
-				mCurrentSelectedDayList=mDayListAdapter.getItem(0).folder_name;
-				createFileList(mCurrentSelectedDayList);
+				if (mDayListAdapter.getCount()>0) {
+					setDayListUnselected();
+					mDayListAdapter.getItem(0).isSelected=true;
+					mDayListAdapter.notifyDataSetChanged();
+					mCurrentSelectedDayList=mDayListAdapter.getItem(0).folder_name;
+					createFileList(mCurrentSelectedDayList);
+				} else {
+					if (mFileListAdapter!=null) {
+						mFileListAdapter.clear();
+						mFileListAdapter.notifyDataSetChanged();
+					}
+				}
 				return true;
 			case R.id.menu_top_show_log:
 				invokeShowLogActivity();
@@ -442,6 +448,7 @@ public class ActivityMain extends FragmentActivity {
 	}
 	
 	protected void onActivityResult(int rc, int resultCode, Intent data) {
+		mLog.addDebugMsg(1, "I", "onActivityResult entered, rc="+rc+", result="+resultCode);
 		if (rc==0) applySettingParms();
 		else if (rc==1) refreshFileList();
 	};
@@ -729,6 +736,7 @@ public class ActivityMain extends FragmentActivity {
 					FileListItem fli=mFileListAdapter.getItem(position);
 					Intent intent;
 					intent = new Intent(mContext,ActivityVideoPlayer.class);
+//					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					intent.putExtra("archive",fli.archive_folder);
 					if (fli.archive_folder) intent.putExtra("fd",mGp.videoArchiveDir);
 					else intent.putExtra("fd",mGp.videoRecordDir);
@@ -1065,16 +1073,16 @@ public class ActivityMain extends FragmentActivity {
     	createDayArchiveList();
     	
     	if (mDayListAdapter.getCount()>0) {
-    		Log.v("","size="+mDayListAdapter.getCount()+", s="+mCurrentSelectedDayList);
+//    		Log.v("","size="+mDayListAdapter.getCount()+", s="+mCurrentSelectedDayList);
 			boolean found=false;
     		for (int i=0;i<mDayListAdapter.getCount();i++) {
     			if (mDayListAdapter.getItem(i).folder_name.equals(mCurrentSelectedDayList)) {
     				mDayListAdapter.getItem(i).isSelected=true;
     				found=true;
     			}
-    			Log.v("","key="+mDayListAdapter.getItem(i).folder_name+", result="+mDayListAdapter.getItem(i).isSelected);
+//    			Log.v("","key="+mDayListAdapter.getItem(i).folder_name+", result="+mDayListAdapter.getItem(i).isSelected);
     		}
-    		Log.v("","found="+found);
+//    		Log.v("","found="+found);
 			if (!found) mDayListAdapter.getItem(0).isSelected=true;
     		mDayListAdapter.notifyDataSetChanged();
     	}

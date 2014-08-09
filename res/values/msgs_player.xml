@@ -2,4 +2,5 @@
 <resources>
     <string name="msgs_player_delete_file">削除</string>
     <string name="msgs_player_delete_file_confirm">%sを削除しますか？</string>
+    <string name="msgs_player_picture_captured">写真を保存しました。ファイル=</string>
 </resources>
