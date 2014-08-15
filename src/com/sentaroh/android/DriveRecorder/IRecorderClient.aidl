@@ -15,5 +15,8 @@ interface IRecorderClient{
 	void aidlShowPreview();
 	void aidlHidePreview();
 	
+	void aidlStartAutoFocus();
+	boolean aidlIsAutoFocusAvailable();
+	
 	void aidlSetActivityStarted(boolean started);
 }

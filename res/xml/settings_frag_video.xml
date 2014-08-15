@@ -33,6 +33,10 @@
 		android:key="settings_record_sound"
 		android:title="@string/settings_record_sound_title"
 		android:summary="@string/settings_record_sound_summary" />
-    
+  	<CheckBoxPreference
+		android:key="settings_start_auto_focus_after_video_record_started"
+		android:title="@string/settings_start_auto_focus_after_video_record_started_title"
+		android:summary="@string/settings_start_auto_focus_after_video_record_started_summary" />
+  	
     	    
 </PreferenceScreen>

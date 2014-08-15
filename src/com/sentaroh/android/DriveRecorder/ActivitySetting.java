@@ -111,6 +111,8 @@ public class ActivitySetting extends PreferenceActivity{
     		isChecked=true;
     	} else if (key_string.equals(c.getString(R.string.settings_video_playback_keep_aspect_ratio))) {
     		isChecked=true;
+    	} else if (key_string.equals(c.getString(R.string.settings_video_record_start_stop_by_volume_key))) {
+    		isChecked=true;
     	}
 
 		return isChecked;
@@ -178,6 +180,8 @@ public class ActivitySetting extends PreferenceActivity{
     		}
     	} else if (key_string.equals(c.getString(R.string.settings_record_sound))) {
     		isChecked=true;
+    	} else if (key_string.equals(c.getString(R.string.settings_start_auto_focus_after_video_record_started))) {
+    		isChecked=true;
     	}
     	return isChecked;
 	};
@@ -211,6 +215,7 @@ public class ActivitySetting extends PreferenceActivity{
 
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_device_orientation_portrait));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_playback_keep_aspect_ratio));
+    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_start_stop_by_volume_key));
         };
         
         @Override
@@ -247,6 +252,7 @@ public class ActivitySetting extends PreferenceActivity{
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_max_video_keep_generation));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_quality));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_record_sound));
+    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_start_auto_focus_after_video_record_started));
         };
         
         @Override

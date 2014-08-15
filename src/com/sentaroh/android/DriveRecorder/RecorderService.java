@@ -24,12 +24,17 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
-import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusMoveCallback;
 import android.hardware.Camera.ErrorCallback;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -41,7 +46,6 @@ import android.media.AudioManager;
 import android.media.CamcorderProfile;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.media.RingtoneManager;
 import android.media.MediaRecorder.OnErrorListener;
 import android.media.MediaRecorder.OnInfoListener;
 import android.media.MediaScannerConnection;
@@ -56,8 +60,11 @@ import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.FrameLayout;
@@ -75,8 +82,10 @@ public class RecorderService extends Service {
 
 	private Context mContext=null;
 	
-	private SurfaceHolder mSurfaceHolder=null;
-	private SurfaceView mSurfaceView=null;
+	private SurfaceHolder mCameraPreviewHolder=null;
+	private SurfaceView mCameraPreview=null;
+	private SurfaceView mFocusView=null;
+	private Bitmap mAutoFocusMark=null;
 
     private boolean mPreviewAvailable=false;
 
@@ -86,11 +95,11 @@ public class RecorderService extends Service {
 	
 	private SleepReceiver mSleepReceiver=null;
 	
-	private boolean mCameraInitCompleted=false;
 	private String mToggleBtnEnabled="1";
 	
 	private WakeLock mWakeLock=null;
 	
+	private boolean mInitCameraParmCompleted=false;
 //    private String mVideoFilePath="";
     
     @Override
@@ -103,6 +112,19 @@ public class RecorderService extends Service {
     	mUiHandler=new Handler();
     	mContext=this;
     	
+    	mGp.screenIsLocked=isKeyguardEffective(mContext);
+    	
+    	Thread th_thumnail=new Thread() {
+    		@Override
+    		public void run() {
+    	    	mGp.loadThumnaiCachelList();
+    	    	mGp.housekeepThumnailCache();
+    	    	mGp.saveThumnailCacheList();
+    		}
+    	};
+    	th_thumnail.setName("Thumnail");
+    	th_thumnail.start();
+    	
     	mWakeLock=((PowerManager)getSystemService(Context.POWER_SERVICE))
     			.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK    					
     				| PowerManager.ON_AFTER_RELEASE, "DriveRecorder");
@@ -110,6 +132,7 @@ public class RecorderService extends Service {
     	initNotification();
 
     	mSleepReceiver=new SleepReceiver();
+        mAutoFocusMark=BitmapFactory.decodeResource(mContext.getResources(), R.drawable.focus_enabled);
     	
     	createCameraPreview();
 
@@ -121,10 +144,19 @@ public class RecorderService extends Service {
     	
 //    	setSensor();
     	
-    	initRingTone(mContext);
-    	
     	myUncaughtExceptionHandler.init();
 
+    	Thread th_camera=new Thread(){
+    		@Override
+    		public void run(){
+    	    	Camera mc=Camera.open(0);
+    			initCameraParms(mc);
+    			mc.release();
+    			mInitCameraParmCompleted=true;
+    		}
+    	};
+    	th_camera.setName("Camera");
+    	th_camera.start();
     };
     
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -136,6 +168,7 @@ public class RecorderService extends Service {
 			mWidget.processWidgetIntent(intent, action);
 		} else if (action.equals(Intent.ACTION_USER_PRESENT)) {
 		} else if (action.equals(TOGGLE_RECORDER_INTENT)) {
+			while(!mInitCameraParmCompleted) SystemClock.sleep(300);
 			if (isToggleBtnEnabled()) {
 				synchronized(mToggleBtnEnabled) {
 					mWidget.setIconStartStop();
@@ -147,24 +180,24 @@ public class RecorderService extends Service {
 					}
 				}
 			}
-		} else if ((mGp.screenIsLocked && action.equals("android.media.VOLUME_CHANGED_ACTION"))) {
+		} else if (mGp.screenIsLocked && action.equals("android.media.VOLUME_CHANGED_ACTION") && 
+					mGp.settingsVideoStartStopByVolumeKey) {
+			while(!mInitCameraParmCompleted) SystemClock.sleep(300);
 			synchronized(mIgnoreVolumeChangedAction) {
 				if (isToggleBtnEnabled() && mIgnoreVolumeChangedAction.equals("0")) {
 					synchronized(mToggleBtnEnabled) {
 						mWidget.setIconStartStop();
 						setToggleBtnEnabled(false);
 						if (mGp.isRecording) {
-							playBackRingtone();
+							playBackRecorderStopRingtone();
 							stopIntervalRecorder();
 						} else {
 							startIntervalRecorder();
 						}
 					}
 				} else {
-					mLog.addDebugMsg(1,"I","onStartCommand ignored" +
-							", toggle="+isToggleBtnEnabled()+
-							", ignore="+mIgnoreVolumeChangedAction+
-							",  action="+action);
+					mLog.addDebugMsg(1,"I","onStartCommand ignored"+", toggle="+isToggleBtnEnabled()+
+							", ignore="+mIgnoreVolumeChangedAction+",  action="+action);
 				}
 			}
 		}
@@ -186,48 +219,64 @@ public class RecorderService extends Service {
 	};
 	
 	private String mIgnoreVolumeChangedAction="0";
-	private void playBackRingtone() {
-		if (mStopRecorderRtUri!=null) {
-			Thread th=new Thread() {
-				@Override
-				public void run() {
-					synchronized(mIgnoreVolumeChangedAction) {
-						mIgnoreVolumeChangedAction="1";
-						SystemClock.sleep(1000);
-						AudioManager am=(AudioManager)getSystemService(Context.AUDIO_SERVICE);
-						int c_n_v=am.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
-						int c_m_v=am.getStreamVolume(AudioManager.STREAM_MUSIC);
-						int m_n_v=am.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
-						int m_m_v=am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-						am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, m_n_v, 0);
-						am.setStreamVolume(AudioManager.STREAM_MUSIC, m_m_v, 0);
-						MediaPlayer player = MediaPlayer.create(mContext, mStopRecorderRtUri);
-						if (player!=null) {
-							int duration=player.getDuration();
-							player.setVolume(1, 1);
-							player.start();
-							SystemClock.sleep(duration+10);
-							player.stop();
-							player.release();
-						}
-						am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, c_n_v, 0);
-						am.setStreamVolume(AudioManager.STREAM_MUSIC, c_m_v, 0);
-						mUiHandler.postDelayed(new Runnable(){
-							@Override
-							public void run() {
-								synchronized(mIgnoreVolumeChangedAction) {
-									mIgnoreVolumeChangedAction="0";
-								}
+	private void playBackRecorderStopRingtone() {
+		Thread th=new Thread() {
+			@Override
+			public void run() {
+				synchronized(mIgnoreVolumeChangedAction) {
+					mIgnoreVolumeChangedAction="1";
+//					SystemClock.sleep(500);
+					AudioManager am=(AudioManager)getSystemService(Context.AUDIO_SERVICE);
+					int c_n_v=am.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+					int c_m_v=am.getStreamVolume(AudioManager.STREAM_MUSIC);
+					int m_n_v=am.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+					int m_m_v=am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+					am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, m_n_v, 0);
+					am.setStreamVolume(AudioManager.STREAM_MUSIC, m_m_v, 0);
+					
+					playBackRingtone("Notification/Adara.ogg");
+					
+					am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, c_n_v, 0);
+					am.setStreamVolume(AudioManager.STREAM_MUSIC, c_m_v, 0);
+					mUiHandler.postDelayed(new Runnable(){
+						@Override
+						public void run() {
+							synchronized(mIgnoreVolumeChangedAction) {
+								mIgnoreVolumeChangedAction="0";
 							}
-						}, 100);
-					}
+						}
+					}, 1000);
 				}
-			};
-			th.start();
-		} else {
-			mLog.addDebugMsg(1,"I", "Ringtone was can not playback.");
-		}
+			}
+		};
+		th.start();
 	};
+
+	private void playBackRingtone(String fp) {
+		AssetFileDescriptor assetFileDescritor;
+		try {
+			assetFileDescritor = mContext.getAssets().openFd(fp);
+			MediaPlayer player = new MediaPlayer();
+			player.setDataSource( assetFileDescritor.getFileDescriptor(), 
+					assetFileDescritor.getStartOffset(), assetFileDescritor.getLength() );
+
+			player.setAudioStreamType(AudioManager.STREAM_MUSIC); 
+			assetFileDescritor.close(); 
+			player.prepare();   
+			player.start(); 
+			if (player!=null) {
+				int duration=player.getDuration();
+				player.setVolume(1, 1);
+				player.start();
+				SystemClock.sleep(duration+10);
+				player.stop();
+				player.release();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
 	
     @Override
     public IBinder onBind(Intent intent) {
@@ -241,32 +290,13 @@ public class RecorderService extends Service {
         super.onDestroy();
         mLog.addDebugMsg(1,"I", "onDestroy entered");
 //        unsetSensor();
-        
+        mGp.saveThumnailCacheList();
         closeNotification();
         stopBasicEventReceiver(mGp);
         mLog.flushLog();
         removeCameraPreview();
     };
 
-    private Uri mStopRecorderRtUri=null;
-    
-    final private void initRingTone(Context c) {
-        RingtoneManager rm = new RingtoneManager(c);
-        rm.setType(RingtoneManager.TYPE_NOTIFICATION);
-        Cursor cursor = rm.getCursor();
-        int idx=0;
-        while (cursor.moveToNext()) {
-        	String ringtone_name=cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX);
-        	mStopRecorderRtUri=rm.getRingtoneUri(idx);
-//        	int index_no=idx;
-        	idx++;
-        	mLog.addDebugMsg(1,"I", "stopRecorderRingtone is "+ringtone_name);
-        	break;
-        }
-        cursor.close();
-	};
-
-    
 	private ThreadCtrl mTcRecorder=null;
 	private void startIntervalRecorder() {
 		mTcRecorder=new ThreadCtrl();
@@ -274,11 +304,12 @@ public class RecorderService extends Service {
     	prepareCamera();
 		Thread th=new Thread() {
 			public void run() {
-				mLog.addDebugMsg(1,"I", "startIntervalRecorder started");
+				mLog.addDebugMsg(1,"I", "Interval recorder thread started");
 				mUiHandler.post(new Runnable(){
 					@Override
 					public void run() {
 						startVideoRecorder();
+						if (mGp.settingsStartAutoFocusAfterVideoRecordStarted) startAutoFocus(-1,-1);
 						mUiHandler.postDelayed(new Runnable(){
 							@Override
 							public void run() {
@@ -289,13 +320,13 @@ public class RecorderService extends Service {
 				});
 				while(mTcRecorder.isEnabled()) {
 					synchronized(mTcRecorder) {
-						mLog.addDebugMsg(1,"I", "startIntervalRecorder wait for timer expired");
+						mLog.addDebugMsg(1,"I", "Interval recorder thread timer begin");
 						try {
 							mTcRecorder.wait(mGp.settingsRecordingDuration*60*1000+900);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
-						mLog.addDebugMsg(1,"I", "startIntervalRecorder timer expired"); 
+						mLog.addDebugMsg(1,"I", "Interval recorder thread timer ended, mTcRecorder="+mTcRecorder.isEnabled()); 
 					}
 					stopVideoRecorder();
 					setToggleBtnEnabled(false);
@@ -313,7 +344,7 @@ public class RecorderService extends Service {
 							}
 						});
 					} else {//Cancel
-						mLog.addDebugMsg(1,"I", "Recorder thread disable was detected");
+						mLog.addDebugMsg(1,"I", "Interval recorder thread was cancelled");
 						mUiHandler.post(new Runnable(){
 							@Override
 							public void run() {
@@ -336,14 +367,16 @@ public class RecorderService extends Service {
 						});
 					}
 				}
-		    	closeNotification();
 		        try {
-		        	if (mActCallback!=null) mActCallback.notifyRecordingStopped();
+		        	if (mActCallback!=null && mActCallback.size()>0) {
+		        		for (int i=0;i<mActCallback.size();i++) mActCallback.get(i).notifyRecordingStopped();
+		        	}
 				} catch (RemoteException e) {
 					e.printStackTrace();
 				}
 				mTcRecorder=null;
-				mLog.addDebugMsg(1,"I", "startIntervalRecorder ended");
+		    	closeNotification();
+				mLog.addDebugMsg(1,"I", "Interval recorder thread ended");
 			}
 		};
 		th.setName("IntervalRecorder");
@@ -357,8 +390,6 @@ public class RecorderService extends Service {
 			synchronized(mTcRecorder) {
 				mTcRecorder.notify();
 			}
-//			SystemClock.sleep(100);
-//			mSurfaceView.setVisibility(CustomSurfaceView.GONE);
 		}
 	};
 
@@ -397,20 +428,21 @@ public class RecorderService extends Service {
 	};
 	
 	private void prepareCamera() {
-        mServiceCamera = Camera.open(0);
-    	if (!mCameraInitCompleted) {
-    		initCameraParms(mServiceCamera);
-    		mCameraInitCompleted=true;
-    	}
-
+		while(!mInitCameraParmCompleted) SystemClock.sleep(100);
+		mServiceCamera=Camera.open(0);
         Camera.Parameters params = mServiceCamera.getParameters();
         mServiceCamera.setParameters(params);
         Camera.Parameters p = mServiceCamera.getParameters();
         p.setFocusMode(mFocusMode);
 
-        p.setFlashMode(mFlashMode);
-
-    	WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
+        if (mFlashMode!=null && !mFlashMode.equals("")) p.setFlashMode(mFlashMode);
+        
+//        p.setExposureCompensation (-2);
+        if (mScneMode!=null) p.setSceneMode(mScneMode);
+        
+        mLog.addDebugMsg(1,"I","Camera option focus mode= "+mFocusMode+", flash mode="+mFlashMode+", scne mode="+mScneMode);
+        
+        WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
     	int h_m=(int)toPixel(mContext.getResources(), 85);
     	
     	Display display = wm.getDefaultDisplay();
@@ -420,7 +452,6 @@ public class RecorderService extends Service {
     	int screen_width=size.x;
     	mLog.addDebugMsg(1,"I","Device screen size : width = " + screen_width + ", height = " + screen_height);
     	
-//        int preview_height=0,preview_width=0;
         int preview_height=144,preview_width=176;
         for(int i=0;i<mSupportedPreviewSizeList.size();i++) {
         	if (screen_width>mSupportedPreviewSizeList.get(i).width && screen_height>mSupportedPreviewSizeList.get(i).height) {
@@ -429,13 +460,9 @@ public class RecorderService extends Service {
         			preview_height=mSupportedPreviewSizeList.get(i).height; 
         		}
         	}
-//        	if (preview_width>mSupportedPreviewSizeList.get(i).width) {
-//    			preview_width=mSupportedPreviewSizeList.get(i).width; 
-//    			preview_height=mSupportedPreviewSizeList.get(i).height; 
-//        	}
         }
         mLog.addDebugMsg(1,"I","Selected Preview video size : width = " + preview_width + " height = " + preview_height);
-        
+
         p.setPreviewSize(preview_width, preview_height);
         p.setPreviewFormat(ImageFormat.NV21);
         mServiceCamera.setParameters(p);
@@ -472,16 +499,6 @@ public class RecorderService extends Service {
         if (mGp.settingsDeviceOrientationPortrait) mServiceCamera.setDisplayOrientation(90);
         else mServiceCamera.setDisplayOrientation(0);
 
-//        if (mFocusMode.equals(Parameters.FOCUS_MODE_CONTINUOUS_VIDEO) ||
-//        		mFocusMode.equals(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-//            mServiceCamera.setAutoFocusMoveCallback(new AutoFocusMoveCallback(){
-//    			@Override
-//    			public void onAutoFocusMoving(boolean start, Camera camera) {
-//    				mLog.addDebugMsg(1,"I", "onAutoFocusMoving entered, start="+start);
-//    			}
-//            });
-//        }
-        
 //        byte[] cb=new byte[3110400];
 //        mServiceCamera.addCallbackBuffer(cb);
 //        mServiceCamera.setPreviewCallbackWithBuffer(new PreviewCallback(){
@@ -503,8 +520,9 @@ public class RecorderService extends Service {
         boolean result=false;
         mServiceCamera.lock();
         try {
-        	mServiceCamera.setPreviewDisplay(mSurfaceHolder);
+        	mServiceCamera.setPreviewDisplay(mCameraPreviewHolder);
             mServiceCamera.startPreview();
+            mCameraPreview.setOnTouchListener(new OnTouchSurfaceListener());
             result=true;
         }
         catch (IOException e) {
@@ -516,13 +534,22 @@ public class RecorderService extends Service {
         
 		return result;
 	};
-	
+
+    @SuppressLint("ClickableViewAccessibility")
+	class OnTouchSurfaceListener implements OnTouchListener {
+        public boolean onTouch(View v, MotionEvent event) {
+            if( event.getAction() == MotionEvent.ACTION_DOWN && !mIsAutoFocusStarted) {
+            	startAutoFocus((int)event.getX(),(int)event.getY());
+            }
+            return false;
+        }
+    };
+
 	private boolean prepareMediaRecorder() {
         try {
             mMediaRecorder = new MediaRecorder();
             mMediaRecorder.setCamera(mServiceCamera);
             if (mGp.settingsRecordSound) mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-//            else mMediaRecorder.setAudioSource(MediaRecorder.AudioSource..MIC);
             mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
             
             CamcorderProfile profile = null;
@@ -543,8 +570,6 @@ public class RecorderService extends Service {
             
             profile.fileFormat = MediaRecorder.OutputFormat.MPEG_4;
             profile.videoBitRate=mGp.settingsVideoBitRate*br_ratio;
-            
-//            mMediaRecorder.setProfile(profile);
             
             mLog.addDebugMsg(1,"I","Selected video size width="+profile.videoFrameWidth+", height="+profile.videoFrameHeight+
             		", frame rate="+profile.videoFrameRate+", video bit rate="+profile.videoBitRate+
@@ -586,7 +611,7 @@ public class RecorderService extends Service {
     			}
             });
             
-            mMediaRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
+            mMediaRecorder.setPreviewDisplay(mCameraPreviewHolder.getSurface());
 
             if (mGp.settingsDeviceOrientationPortrait) {
             	if (Camera.getNumberOfCameras()==2) mMediaRecorder.setOrientationHint(90);
@@ -615,15 +640,14 @@ public class RecorderService extends Service {
             
             if (startCamera()) {
                 if (prepareMediaRecorder()) {
-//                	mCameraPreviewTopText.setVisibility(TextView.VISIBLE);
-                	
                     mGp.isRecording = true;
-                    
                     mWidget.updateIcon(mGp.isRecording);
                     setNotificatioIcon(mGp.isRecording);
-
+                    
                     try {
-            			if (mActCallback!=null) mActCallback.notifyRecordingStarted();
+            			if (mActCallback!=null && mActCallback.size()>0) {
+    		        		for (int i=0;i<mActCallback.size();i++) mActCallback.get(i).notifyRecordingStarted();
+            			}
             		} catch (RemoteException e) {
             			e.printStackTrace();
             		}
@@ -639,7 +663,7 @@ public class RecorderService extends Service {
         }
     };
     
-    public void stopVideoRecorder() {
+    private void stopVideoRecorder() {
     	mLog.addDebugMsg(1,"I", "stopVideoRecorder entered");
         try {
             mServiceCamera.reconnect();
@@ -657,6 +681,7 @@ public class RecorderService extends Service {
             mMediaRecorder.release();
         }
         
+        mIsAutoFocusStarted=false;
         mServiceCamera.lock();
         mServiceCamera.stopPreview();
         mServiceCamera.unlock();
@@ -666,8 +691,28 @@ public class RecorderService extends Service {
         	Thread th=new Thread() {
         		@Override
         		public void run() {
-                	String[] paths = new String[] {sfp};
-                	MediaScannerConnection.scanFile(getApplicationContext(), paths, null, mOnScanCompletedListener);
+        		   	WakeLock wl=((PowerManager)getSystemService(Context.POWER_SERVICE))
+        	    			.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK    					
+        	    				| PowerManager.ON_AFTER_RELEASE, "DriveRecorder-ThumnailCache");
+        		   	try {
+            		   	wl.acquire();
+                    	String[] paths = new String[] {sfp};
+                    	MediaScannerConnection.scanFile(getApplicationContext(), paths, null, mOnScanCompletedListener);
+                    	mGp.addThumnailCache(sfp);
+                    	mGp.saveThumnailCacheList();
+                    	mLog.addDebugMsg(1, "I", "Thunail cache was saved");
+                    	
+        		        try {
+        		        	if (mActCallback!=null && mActCallback.size()>0) {
+        		        		for (int i=0;i<mActCallback.size();i++) mActCallback.get(i).notifyRecordingStopped();
+        		        	}
+        				} catch (RemoteException e) {
+        					e.printStackTrace();
+        				}
+
+        		   	} finally {
+                    	wl.release();
+        		   	}
         		}
         	};
         	th.setPriority(Thread.MIN_PRIORITY);
@@ -680,12 +725,13 @@ public class RecorderService extends Service {
         setNotificatioIcon(mGp.isRecording);
 //        mCameraPreviewTopText.setVisibility(TextView.INVISIBLE);
     };
-
+    
     private List<String> mSupportedFocusModeList=null;
-    private String mFocusMode="", mFlashMode="";
+    private String mFocusMode="", mFlashMode="", mScneMode=null;
     private List<String> mSupportedFlashModeList=null;
     private List<Size> mSupportedPreviewSizeList=null;
     private List<Size> mSupportedVideoSizeList=null;
+    private List<String> mSupportedScneModeList=null;
     
     private void initCameraParms(Camera camera) {
     	
@@ -726,6 +772,20 @@ public class RecorderService extends Service {
             }
         }
         mLog.addDebugMsg(1,"I","Flash mode is="+mFlashMode);
+        
+        mSupportedScneModeList=p.getSupportedSceneModes();
+        mScneMode=null;
+        if (mSupportedScneModeList!=null && mSupportedScneModeList.size()>0) {
+        	mLog.addDebugMsg(1,"I","Available scne mode :");
+        	for (int i=0;i<mSupportedScneModeList.size();i++) {
+        		mLog.addDebugMsg(1,"I","   "+i+"="+mSupportedScneModeList.get(i));
+        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) {
+        			mScneMode=Camera.Parameters.SCENE_MODE_AUTO;
+        		}
+        	}
+        } else {
+        	mLog.addDebugMsg(1,"I","Scne mode wwas not available");
+        }
 
         mSupportedPreviewSizeList = p.getSupportedPreviewSizes();
         mLog.addDebugMsg(1,"I","Available preview size :");
@@ -775,19 +835,19 @@ public class RecorderService extends Service {
 		}
 	};
 
-	private IRecorderCallback mActCallback=null;
+	private ArrayList<IRecorderCallback> mActCallback=new ArrayList<IRecorderCallback>();
     
     final private IRecorderClient.Stub mSvcRecorderClient = 
 			new IRecorderClient.Stub() {
     	@Override
 		final public void setCallBack(final IRecorderCallback callback)
 				throws RemoteException {
-    		mActCallback=callback;
+    		mActCallback.add(callback);
 		};
 		@Override
 		final public void removeCallBack(IRecorderCallback callback)
 				throws RemoteException {
-			mActCallback=null;
+			mActCallback.remove(callback);
 		};
 		@Override
         final public void aidlStartRecorderThread() throws RemoteException {
@@ -829,10 +889,159 @@ public class RecorderService extends Service {
         };
 
         @Override
+        final public void aidlStartAutoFocus() throws RemoteException {
+        	startAutoFocus(-1,-1);
+        };
+
+        @Override
+        final public boolean aidlIsAutoFocusAvailable() throws RemoteException {
+        	return isAutoFocusAvailable();
+        };
+
+        @Override
         final public void aidlSetActivityStarted(boolean started) throws RemoteException {
         	setActivityStarted(started);
         };
 
+    };
+
+    final private boolean isAutoFocusAvailable() {
+        if (mFocusMode.equals(Parameters.FOCUS_MODE_CONTINUOUS_VIDEO) ||
+    		mFocusMode.equals(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE) ||
+    		mFocusMode.equals(Parameters.FOCUS_MODE_AUTO)) {
+        	return true;
+        } else return false;
+    };
+
+    private boolean mIsAutoFocusStarted=false;
+    final private void startAutoFocus(int touch_x, int touch_y) {
+        if (isAutoFocusAvailable() && !mIsAutoFocusStarted) {
+        	mIsAutoFocusStarted=true;
+          Camera.Parameters p = mServiceCamera.getParameters();
+          mFocusView.setVisibility(SurfaceView.VISIBLE);
+          if (p.getMaxNumFocusAreas()>0) {
+//              List<Camera.Area>fl=p.getFocusAreas();
+              if (touch_x==-1 && touch_y==-1) {
+            	  mLog.addDebugMsg(1,"I", "Auto fucs area is not specified, center is assumed");
+            	  drawFocusMark(-1,-1);
+              } else {
+            	  //
+            	  //http://qiita.com/negi_magnet/items/e8d1b95a17da5539c261
+            	  //上記サイトを参考
+            	  //
+          	      int x=0, y=0;
+          	      if (mGp.settingsDeviceOrientationPortrait) {
+              	      x = touch_y;
+//              	  y = (mCameraPreview.getWidth()-(int)event.getX());
+              	      y = touch_x;
+          	      } else {
+              	      // 画面横置きの場合
+          	    	  x = touch_x;
+                  	  y = touch_y;
+          	      }
+          	    
+          	      mLog.addDebugMsg(1, "I", "onTouch touch X="+touch_x+", y="+touch_y+
+          	    		", preview width="+p.getPreviewSize().width+", height="+p.getPreviewSize().height);
+          	    
+          	      // タッチした座標を[-1000,1000]の範囲に落としこむ
+          	      int fx = 0, fy = 0;
+          	      if (mGp.settingsDeviceOrientationPortrait) {
+              	      fx = x * 2000 / p.getPreviewSize().width - 1000;
+              	      fy = y * 2000 / p.getPreviewSize().width - 1000;
+          	      } else {
+              	      fx = x * 2000 / p.getPreviewSize().width - 1000;
+              	      fy = y * 2000 / p.getPreviewSize().width - 1000;
+          	      }
+
+          	      // 上記の(x,y)を中央とした100x100の矩形領域を設定することにする
+          	      // 矩形の端が[-1000,1000]を出ないように調整
+          	      if( fx < -950 ) fx = -950;
+          	      if( fx > 950  ) fx =  950;
+          	      if( fy < -950 ) fy = -950;
+          	      if( fy > 950  ) fy =  950;
+
+          	      // 矩形領域をセット
+          	      List<Camera.Area> area = new ArrayList<Camera.Area>();
+          	      area.add(new Camera.Area(new Rect(fx-50, fy-50, fx+50, fy+50), 1));
+          	      p.setFocusAreas(area);
+          	      mServiceCamera.setParameters(p);
+
+          	      mLog.addDebugMsg(1,"I", "touch detected, x="+x+", y="+y+", fx="+fx+", fy="+fy);
+            	  
+            	  mLog.addDebugMsg(1,"I", "Auto focus area specified, bottom="+area.get(0).rect.bottom+", top="+area.get(0).rect.top+
+                  			", left="+area.get(0).rect.left+", right="+area.get(0).rect.right);
+            	  drawFocusMark(touch_x, touch_y);
+              }
+          } else {
+        	  mLog.addDebugMsg(1,"I", "Auto fucs area is not available, center is assumed");
+        	  drawFocusMark(-1,-1);
+          }
+        	
+          mServiceCamera.setAutoFocusMoveCallback(new AutoFocusMoveCallback(){
+	          @Override
+			  public void onAutoFocusMoving(boolean start, Camera camera) {
+				  mLog.addDebugMsg(1,"I", "onAutoFocus entered, start="+start);
+			  }
+          });
+          mServiceCamera.autoFocus(new Camera.AutoFocusCallback(){
+				@Override
+				public void onAutoFocus(boolean success, Camera camera) {
+    				mLog.addDebugMsg(1,"I", "onAutoFocus entered, success="+success);
+    				if (!success) {
+    					Thread th=new Thread() {
+    						@Override
+    						public void run() {
+    	    					playBackRingtone("Notification/Spica.ogg");
+    						}
+    					};
+    					th.start();
+//    					Toast toast = Toast.makeText(mContext, 
+//    							mContext.getString(R.string.msgs_main_autofocus_failed), Toast.LENGTH_SHORT);
+//    					toast.show();
+    				} else {
+    					Thread th=new Thread() {
+    						@Override
+    						public void run() {
+    	    					playBackRingtone("Notification/CetiAlpha.ogg");
+    						}
+    					};
+    					th.start();
+    				}
+//    				mServiceCamera.cancelAutoFocus();
+    				mIsAutoFocusStarted=false;
+					mFocusView.setVisibility(SurfaceView.INVISIBLE);
+    				Camera.Parameters p = mServiceCamera.getParameters();
+    				float[] fad=new float[3];
+    				p.getFocusDistances(fad);
+    				mLog.addDebugMsg(1,"I", "onAutoFocus Focus distance0="+fad[Camera.Parameters.FOCUS_DISTANCE_NEAR_INDEX]+
+    						", distance1="+fad[Camera.Parameters.FOCUS_DISTANCE_OPTIMAL_INDEX]+
+    						", distance2="+fad[Camera.Parameters.FOCUS_DISTANCE_FAR_INDEX]);
+    				if (p.getMaxNumFocusAreas()>0 && p.getFocusAreas()!=null) {
+    					p.setFocusAreas(null);
+    					mServiceCamera.setParameters(p);
+    				}
+				}
+          });
+        }
+    };
+
+    private void drawFocusMark(int mark_x, int mark_y) {
+    	if (mark_x!=-1 && mark_y!=-1) {
+            Rect bm_rect=new Rect(0,0,mAutoFocusMark.getWidth(),mAutoFocusMark.getHeight());
+            Canvas canvas=mFocusView.getHolder().lockCanvas();
+            Rect fm_rect=new Rect(mark_x-63, mark_y-63, mark_x+63, mark_y+63);
+            canvas.drawBitmap(mAutoFocusMark, bm_rect, fm_rect, null);
+            mFocusView.getHolder().unlockCanvasAndPost(canvas);
+    	} else {
+            Rect bm_rect=new Rect(0,0,mAutoFocusMark.getWidth(),mAutoFocusMark.getHeight());
+            Canvas canvas=mFocusView.getHolder().lockCanvas();
+            Rect v_rect=mFocusView.getHolder().getSurfaceFrame();
+            int c_height=v_rect.bottom/2;
+            int c_width=v_rect.right/2;
+            Rect fm_rect=new Rect(c_width-63, c_height-63, c_width+63,c_height+63);
+            canvas.drawBitmap(mAutoFocusMark, bm_rect, fm_rect, null);
+            mFocusView.getHolder().unlockCanvasAndPost(canvas);
+    	}
     };
     
     private boolean mActivityStarted=false;
@@ -883,48 +1092,69 @@ public class RecorderService extends Service {
     	WindowManager windowManager = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
     	mCameraPreviewFrame=new FrameLayout(this);
     	mCameraPreviewTopText=new TextView(this);
-    	mSurfaceView = new SurfaceView(this);
-    	mSurfaceHolder=mSurfaceView.getHolder();
+    	mCameraPreview = new SurfaceView(this);
+    	mFocusView = new SurfaceView(this);
+    	mFocusView.getHolder().setFormat(PixelFormat.TRANSPARENT);
+    	mCameraPreviewHolder=mCameraPreview.getHolder();
         LayoutParams lp_frame = new WindowManager.LayoutParams(
         		20,20,
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE+
+//            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE+
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         );
         lp_frame.gravity = Gravity.CENTER | Gravity.BOTTOM;
-        LayoutParams lp_c_view = new LayoutParams(
-        		LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
+        LayoutParams lp_c_view = new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
         lp_c_view.gravity = Gravity.CENTER | Gravity.TOP;
         windowManager.addView(mCameraPreviewFrame, lp_frame);
-        mCameraPreviewFrame.addView(mSurfaceView, lp_c_view);
+        mCameraPreviewFrame.addView(mCameraPreview, lp_c_view);
+        mCameraPreviewFrame.addView(mFocusView, lp_c_view);
+        mFocusView.setZOrderMediaOverlay(true);//setZOrderOnTop(true);
         mCameraPreviewFrame.addView(mCameraPreviewTopText, lp_c_view);
-//        mSurfaceView.setZOrderOnTop(true);
-        mSurfaceHolder.addCallback(new SurfaceHolder.Callback(){
+        mCameraPreviewHolder.addCallback(new SurfaceHolder.Callback(){
 			@Override
 			public void surfaceCreated(SurfaceHolder holder) {
-				mLog.addDebugMsg(1,"I","surfaceCreated entered");
+				mLog.addDebugMsg(1,"I","Preview SurfaceCreated entered");
 			}
 
 			@Override
-			public void surfaceChanged(SurfaceHolder holder, int format,
-					int width, int height) {
-				mLog.addDebugMsg(1,"I","surfaceChanged entered");
+			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+				mLog.addDebugMsg(1,"I","Preview SurfaceChanged entered, w="+width+", h="+height);
 			}
 
 			@Override
 			public void surfaceDestroyed(SurfaceHolder holder) {
-				mLog.addDebugMsg(1,"I","surfaceDestroyed entered");
+				mLog.addDebugMsg(1,"I","Preview SurfaceDestroyed entered");
 			}
         });
+        
+        mFocusView.getHolder().addCallback(new SurfaceHolder.Callback(){
+			@Override
+			public void surfaceCreated(SurfaceHolder holder) {
+				mLog.addDebugMsg(1,"I","Focusview SurfaceCreated entered");
+//				drawFocusMarkAtCenter();
+			}
+
+			@Override
+			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+				mLog.addDebugMsg(1,"I","Focusview SurfaceChanged entered, w="+width+", h="+height);
+//				drawFocusMarkAtCenter();
+			}
+
+			@Override
+			public void surfaceDestroyed(SurfaceHolder holder) {
+				mLog.addDebugMsg(1,"I","Focusview SurfaceDestroyed entered");
+			}
+        });
+
         mLog.addDebugMsg(1,"I", "CustomSurfaceView created");
     };
 
 	private void removeCameraPreview() {
-		if (mSurfaceView!=null) {
+		if (mCameraPreview!=null) {
 	    	WindowManager windowManager = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
 	        windowManager.removeView(mCameraPreviewFrame);
-	        mSurfaceView=null;
+	        mCameraPreview=null;
 	        mLog.addDebugMsg(1,"I", "Camera preview was removed");
 		}
     };

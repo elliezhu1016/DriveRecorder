@@ -11,6 +11,10 @@
           android:title="@string/msgs_main_menu_refresh" 
           android:icon="@drawable/ic_48_menu_refresh"
           android:showAsAction="always|withText"/>
+	<item android:id="@+id/menu_top_start_autofocus"
+          android:title="@string/msgs_main_menu_start_autofocus"
+          android:icon="@drawable/focus_enabled"
+          android:showAsAction="always|withText"/>
     <item android:id="@+id/menu_top_show_log"
           android:title="@string/msgs_main_menu_show_log" 
           android:icon="@drawable/ic_32_bw_browse_text"

@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">Drive Recorder</string>
+    <string name="app_player">Video Player</string>
     <string name="action_settings">Settings</string>
 
 </resources>
