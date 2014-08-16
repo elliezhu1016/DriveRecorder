@@ -178,6 +178,11 @@ public class ActivitySetting extends PreferenceActivity{
     		} else if (ts.equals(RECORD_VIDEO_QUALITY_HIGH)) {
         		pref_key.setSummary(ts_label[2]);
     		}
+    	} else if (key_string.equals(c.getString(R.string.settings_video_record_bitrate))) {
+    		isChecked=true;
+    		String ts=shared_pref.getString(key_string,"0");
+    		String[] ts_label= c.getResources().getStringArray(R.array.settings_video_record_bitrate_list_entries);
+    		pref_key.setSummary(ts_label[Integer.parseInt(ts)]);
     	} else if (key_string.equals(c.getString(R.string.settings_record_sound))) {
     		isChecked=true;
     	} else if (key_string.equals(c.getString(R.string.settings_start_auto_focus_after_video_record_started))) {
@@ -251,6 +256,7 @@ public class ActivitySetting extends PreferenceActivity{
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_recording_duration));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_max_video_keep_generation));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_quality));
+    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_bitrate));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_record_sound));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_start_auto_focus_after_video_record_started));
         };

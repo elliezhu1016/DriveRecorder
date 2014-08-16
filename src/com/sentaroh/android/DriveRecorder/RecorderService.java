@@ -118,8 +118,7 @@ public class RecorderService extends Service {
     		@Override
     		public void run() {
     	    	mGp.loadThumnaiCachelList();
-    	    	mGp.housekeepThumnailCache();
-    	    	mGp.saveThumnailCacheList();
+    	    	if (mGp.housekeepThumnailCache()) mGp.saveThumnailCacheList();
     		}
     	};
     	th_thumnail.setName("Thumnail");
@@ -569,7 +568,9 @@ public class RecorderService extends Service {
             		", audio bit rate=="+profile.audioBitRate+", sample rate="+profile.audioSampleRate);
             
             profile.fileFormat = MediaRecorder.OutputFormat.MPEG_4;
-            profile.videoBitRate=mGp.settingsVideoBitRate*br_ratio;
+            int vr=Integer.parseInt(mGp.settingsVideoBitRate);
+            if (vr==0) profile.videoBitRate=1000*1000*br_ratio;
+            else profile.videoBitRate=1000*1000*vr;
             
             mLog.addDebugMsg(1,"I","Selected video size width="+profile.videoFrameWidth+", height="+profile.videoFrameHeight+
             		", frame rate="+profile.videoFrameRate+", video bit rate="+profile.videoBitRate+
@@ -589,7 +590,7 @@ public class RecorderService extends Service {
             
             mMediaRecorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
             final String t_msg="Video width="+profile.videoFrameWidth+", height="+profile.videoFrameHeight+
-            		", bit rate="+(profile.videoBitRate/1024)+"KBPS";
+            		", bit rate="+(profile.videoBitRate/(1000*1000))+"MBPS";
             mUiHandler.post(new Runnable(){
 				@Override
 				public void run() {
@@ -775,14 +776,16 @@ public class RecorderService extends Service {
         
         mSupportedScneModeList=p.getSupportedSceneModes();
         mScneMode=null;
+        boolean s_auto=false, s_action=false;
         if (mSupportedScneModeList!=null && mSupportedScneModeList.size()>0) {
         	mLog.addDebugMsg(1,"I","Available scne mode :");
         	for (int i=0;i<mSupportedScneModeList.size();i++) {
         		mLog.addDebugMsg(1,"I","   "+i+"="+mSupportedScneModeList.get(i));
-        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) {
-        			mScneMode=Camera.Parameters.SCENE_MODE_AUTO;
-        		}
+        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) s_auto=true;
+        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_ACTION)) s_action=true;
         	}
+        	if (s_action) mScneMode=Camera.Parameters.SCENE_MODE_ACTION;
+        	else if (s_auto) mScneMode=Camera.Parameters.SCENE_MODE_AUTO;
         } else {
         	mLog.addDebugMsg(1,"I","Scne mode wwas not available");
         }

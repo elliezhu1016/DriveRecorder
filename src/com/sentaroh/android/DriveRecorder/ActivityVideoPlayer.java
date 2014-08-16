@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -92,6 +93,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private TextView mTvTitle=null;
 	private ImageButton mIbArchive=null;
 	private ImageButton mIbCapture=null;
+	private ImageButton mIbMediaPlayer=null;
 //	private LinearLayout mLayoutTop=null;
 //	private LinearLayout mLayoutBottom=null;
 
@@ -194,6 +196,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mIbShare=(ImageButton)findViewById(R.id.video_player_dlg_share);
 		mIbArchive=(ImageButton)findViewById(R.id.video_player_dlg_archive);
 		mIbCapture=(ImageButton)findViewById(R.id.video_player_dlg_capture);
+		mIbMediaPlayer=(ImageButton)findViewById(R.id.video_player_dlg_start_media_player);
 		mTvTitle=(TextView)findViewById(R.id.video_player_dlg_title);
 //		mLayoutTop=(LinearLayout)findViewById(R.id.video_player_dlg_top_panel);
 //		mLayoutBottom=(LinearLayout)findViewById(R.id.video_player_dlg_bottom_panel);
@@ -374,8 +377,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 						} else {
 							finish();
 						}
-						mGp.housekeepThumnailCache();
-						mGp.saveThumnailCacheList();
+						if (mGp.housekeepThumnailCache()) mGp.saveThumnailCacheList();
 					}
 					@Override
 					public void negativeResponse(Context c, Object[] o) {
@@ -428,7 +430,36 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			}
 		});
 
-		if (mIsArchiveFolder) mIbArchive.setVisibility(ImageButton.GONE);
+		mIbMediaPlayer.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+//				String dir=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()+"/";
+//				File lf=new File(dir);
+//				File[] list=lf.listFiles();
+//				String fp="";
+//				if (list!=null && list.length>0) {
+//					for (int i=0;i<list.length;i++) {
+//						if (list[i].getName().endsWith(".jpg")) {
+//							fp=list[i].getPath();
+//							break;
+//						}
+//					}
+//				}
+				Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+//				if (fp.equals("")) {
+//					intent.setDataAndType(Uri.parse("file://"+dir), "image/jpeg");
+//				} else {
+//					intent.setDataAndType(Uri.parse("file://"+fp), "image/jpeg");
+//				}
+				intent.setType("image/jpeg");
+				startActivity(intent);
+			}
+		});
+		
+		if (mIsArchiveFolder) {
+			mIbArchive.setImageResource(R.drawable.archive_disabled);
+			mIbArchive.setEnabled(false);
+		}
 		mIbArchive.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -709,7 +740,22 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				@Override
 				public void onPrepared(MediaPlayer mp) {
 					mLog.addDebugMsg(1,"I","onPrepared called");
-					String wh=" "+mMediaPlayer.getVideoWidth()+" x "+mMediaPlayer.getVideoHeight();
+					MediaMetadataRetriever mr=new MediaMetadataRetriever();
+					mr.setDataSource(mVideoFolder+fp);
+					String br_str=mr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE);
+					BigDecimal br=new BigDecimal("0.00");
+					if (br_str!=null)  {
+						BigDecimal br_a=new BigDecimal(br_str);
+						BigDecimal br_b=new BigDecimal(1000*1000);
+						br=br_a.divide(br_b,0,BigDecimal.ROUND_HALF_UP);
+//						Log.v("","br_str="+br_str+", br_a="+br_a+", br_b="+br_b);
+//						BigDecimal dfs1 = new BigDecimal(fs);
+//					    BigDecimal dfs2 = new BigDecimal(1024*1024*1024);
+//					    BigDecimal dfs3 = new BigDecimal("0.00");
+//					    dfs3=dfs1.divide(dfs2,1, BigDecimal.ROUND_HALF_UP);
+					}
+					
+					String wh=" "+mMediaPlayer.getVideoWidth()+" x "+mMediaPlayer.getVideoHeight()+" "+br+"MBPS";
 					if (mIsArchiveFolder) mTvTitle.setText(mContext.getString(R.string.msgs_main_folder_type_archive)+" "+fp +" "+wh);
 					else mTvTitle.setText(mContext.getString(R.string.msgs_main_folder_type_record)+" "+fp +" "+wh);
 					

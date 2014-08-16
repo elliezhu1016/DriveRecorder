@@ -58,6 +58,37 @@
         <item>HIGH</item>
     </string-array>
 		
+	<string name="settings_video_record_bitrate_title">ビットレート</string>
+	<string name="settings_video_record_bitrate_summary"></string>
+	<string name="settings_video_record_bitrate_dialog_title">ビットレート</string>
+	<string name="settings_video_record_bitrate">settings_video_record_bitrate</string>
+	<string-array name="settings_video_record_bitrate_list_entries">
+        <item>ビデオ品質に従う</item>
+        <item>1MBPS</item>
+        <item>2MBPS</item>
+        <item>3MBPS</item>
+        <item>4MBPS</item>
+        <item>5MBPS</item>
+        <item>6MBPS</item>
+        <item>7MBPS</item>
+        <item>8MBPS</item>
+        <item>9MBPS</item>
+        <item>10MBPS</item>
+    </string-array>
+	<string-array name="settings_video_record_bitrate_list_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+    </string-array>
+		
 	<string name="settings_video_playback_keep_aspect_ratio">settings_video_playback_keep_aspect_ratio</string>
     <string name="settings_video_playback_keep_aspect_ratio_title">ビデオ再生の縦横比</string>
     <string name="settings_video_playback_keep_aspect_ratio_summary">ビデオ再生の縦横比を保持する</string>

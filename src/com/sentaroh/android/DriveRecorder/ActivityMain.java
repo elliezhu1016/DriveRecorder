@@ -960,8 +960,7 @@ public class ActivityMain extends FragmentActivity {
 						    	mFileListAdapter.remove(mFileListAdapter.getItem(i));
 							}
 						}
-						mGp.housekeepThumnailCache();
-						mGp.saveThumnailCacheList();
+						if (mGp.housekeepThumnailCache()) mGp.saveThumnailCacheList();
 				    	if (mFileListAdapter.getCount()==0) {
 				    		createDayList();
 					        if (mDayListAdapter.getCount()>0) {

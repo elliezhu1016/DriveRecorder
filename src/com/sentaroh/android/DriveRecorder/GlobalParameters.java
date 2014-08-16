@@ -60,7 +60,7 @@ public class GlobalParameters extends Application{
 	public int settingsRecordingDuration=3;
 	public int settingsMaxVideoKeepGeneration=100;
 	
-	public int settingsVideoBitRate=1024*1024;
+	public String settingsVideoBitRate="0";
 
 	public String settingsRecordVideoQuality=RECORD_VIDEO_QUALITY_LOW;//1280_720;//720_480;
 	
@@ -97,6 +97,9 @@ public class GlobalParameters extends Application{
 			settingsDebugLevel=0;
 			settingsLogEnabled=false;
 		}
+		
+		settingsVideoBitRate=
+				prefs.getString(c.getString(R.string.settings_video_record_bitrate),"0");
 		
 		settingsRecordSound=
 				prefs.getBoolean(c.getString(R.string.settings_record_sound),true);
@@ -142,7 +145,8 @@ public class GlobalParameters extends Application{
 		}
 	};
 	
-    public void housekeepThumnailCache() {
+	public boolean thumnailCacheListModified=false;
+    public boolean housekeepThumnailCache() {
     	synchronized(thumnailCacheList) {
         	File rf=new File(videoRecordDir);
         	File[] rfl=rf.listFiles();
@@ -152,6 +156,7 @@ public class GlobalParameters extends Application{
 //            		Log.v("","ba="+ba+", fp="+rfl[i].getPath());
             		if (ba==null) {
             			addThumnailCache(rfl[i].getPath());
+            			thumnailCacheListModified=true;
             		}
             	}
         	}
@@ -164,6 +169,7 @@ public class GlobalParameters extends Application{
 //            		Log.v("","ba="+ba+", fp="+afl[i].getPath());
             		if (ba==null) {
             			addThumnailCache(afl[i].getPath());
+            			thumnailCacheListModified=true;
             		}
             	}
         	}
@@ -174,10 +180,12 @@ public class GlobalParameters extends Application{
                 	File tlf=new File(tli.file_path);
                 	if (!tlf.exists()) {
                 		thumnailCacheList.remove(i);
+                		thumnailCacheListModified=true;
                 	}
             	}
         	}
     	}
+    	return thumnailCacheListModified;
     };
 	
     public void addThumnailCache(String fp) {
@@ -198,6 +206,7 @@ public class GlobalParameters extends Application{
 		}
 		synchronized(thumnailCacheList) {
 			thumnailCacheList.add(tli);
+			thumnailCacheListModified=true;
 		}
     };
 
@@ -208,6 +217,7 @@ public class GlobalParameters extends Application{
         	for (int i=0;i<thumnailCacheList.size();i++) {
         		if (thumnailCacheList.get(i).file_path.equals(fp)) {
         			thumnailCacheList.remove(i);
+        			thumnailCacheListModified=true;
         			result=true;
         			break;
         		}
@@ -258,6 +268,7 @@ public class GlobalParameters extends Application{
         		} catch (IOException e) {
         			e.printStackTrace();
         		}
+            	thumnailCacheListModified=false;
         	}
     	}
     };
@@ -300,6 +311,7 @@ public class GlobalParameters extends Application{
     		} catch (IOException e) {
     			e.printStackTrace();
     		}
+        	thumnailCacheListModified=false;
     	}
     };
 

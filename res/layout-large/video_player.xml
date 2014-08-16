@@ -69,43 +69,6 @@
                     android:textAppearance="?android:attr/textAppearanceMedium" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="#40808080"
-                android:visibility="visible" >
-
-                <ImageButton
-                    android:id="@+id/video_player_dlg_prev"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/prev_file_enabled" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1" />
-
-                <ImageButton
-                    android:id="@+id/video_player_dlg_start_stop"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/player_play_enabled" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1" />
-
-                <ImageButton
-                    android:id="@+id/video_player_dlg_next"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/next_file_enabled" />
-            </LinearLayout>
         </LinearLayout>
 
         <ImageButton
@@ -124,7 +87,7 @@
             android:layout_above="@+id/video_player_dlg_share"
             android:layout_alignParentLeft="true"
             android:scaleType="centerCrop"
-            android:src="@drawable/archive" />
+            android:src="@drawable/archive_enabled" />
 
         <ImageButton
             android:id="@+id/video_player_dlg_share"
@@ -143,6 +106,43 @@
             android:layout_alignTop="@+id/video_player_dlg_share"
             android:scaleType="centerCrop"
             android:src="@drawable/capture_enabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_prev"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/video_player_dlg_capture"
+            android:layout_marginTop="179dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/prev_file_enabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_start_media_player"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/video_player_dlg_capture"
+            android:scaleType="centerCrop"
+            android:src="@drawable/media_player" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_next"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignTop="@+id/video_player_dlg_prev"
+            android:scaleType="fitCenter"
+            android:src="@drawable/next_file_enabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_start_stop"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/video_player_dlg_share"
+            android:scaleType="centerCrop"
+            android:src="@drawable/player_play_enabled" />
 
     </RelativeLayout>
 
