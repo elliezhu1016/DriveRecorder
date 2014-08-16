@@ -437,9 +437,19 @@ public class RecorderService extends Service {
         if (mFlashMode!=null && !mFlashMode.equals("")) p.setFlashMode(mFlashMode);
         
 //        p.setExposureCompensation (-2);
-        if (mScneMode!=null) p.setSceneMode(mScneMode);
+        if (mGp.settingsScneModeActionEnabled) {
+        	if (mScneModeActionAvailable || mScneModeSportsAvailable) {
+        		if (mScneModeActionAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_ACTION);
+        		else if (mScneModeSportsAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_SPORTS);
+        	} else {
+        		if (mScneModeAutoAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+        	}
+        } else {
+        	if (mScneModeAutoAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+        }
         
-        mLog.addDebugMsg(1,"I","Camera option focus mode= "+mFocusMode+", flash mode="+mFlashMode+", scne mode="+mScneMode);
+        mLog.addDebugMsg(1,"I","Camera option focus mode= "+mFocusMode+", flash mode="+mFlashMode+
+        		", scne mode="+p.getSceneMode());
         
         WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
     	int h_m=(int)toPixel(mContext.getResources(), 85);
@@ -728,7 +738,9 @@ public class RecorderService extends Service {
     };
     
     private List<String> mSupportedFocusModeList=null;
-    private String mFocusMode="", mFlashMode="", mScneMode=null;
+    private String mFocusMode="", mFlashMode="";
+    private boolean mScneModeAutoAvailable=false, mScneModeActionAvailable=false,
+    		mScneModeSportsAvailable=false;
     private List<String> mSupportedFlashModeList=null;
     private List<Size> mSupportedPreviewSizeList=null;
     private List<Size> mSupportedVideoSizeList=null;
@@ -775,17 +787,20 @@ public class RecorderService extends Service {
         mLog.addDebugMsg(1,"I","Flash mode is="+mFlashMode);
         
         mSupportedScneModeList=p.getSupportedSceneModes();
-        mScneMode=null;
-        boolean s_auto=false, s_action=false;
         if (mSupportedScneModeList!=null && mSupportedScneModeList.size()>0) {
         	mLog.addDebugMsg(1,"I","Available scne mode :");
         	for (int i=0;i<mSupportedScneModeList.size();i++) {
         		mLog.addDebugMsg(1,"I","   "+i+"="+mSupportedScneModeList.get(i));
-        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) s_auto=true;
-        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_ACTION)) s_action=true;
+        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) {
+        			mScneModeAutoAvailable=true;
+        		}
+        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_ACTION)) {
+        			mScneModeActionAvailable=true;
+        		}
+        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_SPORTS)) {
+        			mScneModeSportsAvailable=true;
+        		}
         	}
-        	if (s_action) mScneMode=Camera.Parameters.SCENE_MODE_ACTION;
-        	else if (s_auto) mScneMode=Camera.Parameters.SCENE_MODE_AUTO;
         } else {
         	mLog.addDebugMsg(1,"I","Scne mode wwas not available");
         }

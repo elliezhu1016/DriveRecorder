@@ -78,6 +78,8 @@ public class GlobalParameters extends Application{
 	public ArrayList<ThumnaiCachelListItem> thumnailCacheList=null;
 	
 	public boolean settingsStartAutoFocusAfterVideoRecordStarted=false;
+	
+	public boolean settingsScneModeActionEnabled=false;
     
 	public void loadSettingParms(Context c) {
 		
@@ -109,6 +111,9 @@ public class GlobalParameters extends Application{
 		settingsVideoStartStopByVolumeKey=
 				prefs.getBoolean(c.getString(R.string.settings_video_record_start_stop_by_volume_key),true);
 		
+		settingsScneModeActionEnabled=
+				prefs.getBoolean(c.getString(R.string.settings_video_scne_mode_action_enabled),false);
+				
 		settingsExitCleanly=
 				prefs.getBoolean(c.getString(R.string.settings_exit_cleanly),false);
 		settingsRecordingDuration=Integer.parseInt(
