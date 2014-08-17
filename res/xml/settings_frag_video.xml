@@ -39,9 +39,9 @@
 		android:entryValues="@array/settings_video_record_bitrate_list_values"/>
     
   	<CheckBoxPreference
-		android:key="settings_video_scne_mode_action_enabled"
-		android:title="@string/settings_video_scne_mode_action_enabled_title"
-		android:summary="@string/settings_video_scne_mode_action_enabled_summary" />
+		android:key="settings_video_scene_mode_action_enabled"
+		android:title="@string/settings_video_scene_mode_action_enabled_title"
+		android:summary="@string/settings_video_scene_mode_action_enabled_summary" />
   	
     <CheckBoxPreference
 		android:key="settings_record_sound"

@@ -58,8 +58,8 @@ import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.util.TypedValue;
-import android.view.Display;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -67,7 +67,6 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 public class RecorderService extends Service {
@@ -134,7 +133,6 @@ public class RecorderService extends Service {
         mAutoFocusMark=BitmapFactory.decodeResource(mContext.getResources(), R.drawable.focus_enabled);
     	
     	createCameraPreview();
-
     	hidePreview();
 
     	mWidget=new WidgetService(mContext, mGp, mLog);
@@ -357,6 +355,7 @@ public class RecorderService extends Service {
 											public void run() {
 										    	removeCameraPreview();
 										    	createCameraPreview();
+										    	hidePreview();
 												setToggleBtnEnabled(true);
 											}
 										});
@@ -437,26 +436,26 @@ public class RecorderService extends Service {
         if (mFlashMode!=null && !mFlashMode.equals("")) p.setFlashMode(mFlashMode);
         
 //        p.setExposureCompensation (-2);
-        if (mGp.settingsScneModeActionEnabled) {
-        	if (mScneModeActionAvailable || mScneModeSportsAvailable) {
-        		if (mScneModeActionAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_ACTION);
-        		else if (mScneModeSportsAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_SPORTS);
+        if (mGp.settingsSceneModeActionEnabled) {
+        	if (mSceneModeActionAvailable || mSceneModeSportsAvailable) {
+        		if (mSceneModeActionAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_ACTION);
+        		else if (mSceneModeSportsAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_SPORTS);
         	} else {
-        		if (mScneModeAutoAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+        		if (mSceneModeAutoAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
         	}
         } else {
-        	if (mScneModeAutoAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+        	if (mSceneModeAutoAvailable) p.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
         }
+        mSceneMode=p.getSceneMode();
         
         mLog.addDebugMsg(1,"I","Camera option focus mode= "+mFocusMode+", flash mode="+mFlashMode+
-        		", scne mode="+p.getSceneMode());
+        		", scene mode="+mSceneMode);
         
         WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
     	int h_m=(int)toPixel(mContext.getResources(), 85);
     	
-    	Display display = wm.getDefaultDisplay();
     	Point size = new Point();
-    	display.getSize(size);
+    	wm.getDefaultDisplay().getSize(size);
     	int screen_height=size.y-h_m;
     	int screen_width=size.x;
     	mLog.addDebugMsg(1,"I","Device screen size : width = " + screen_width + ", height = " + screen_height);
@@ -600,7 +599,8 @@ public class RecorderService extends Service {
             
             mMediaRecorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
             final String t_msg="Video width="+profile.videoFrameWidth+", height="+profile.videoFrameHeight+
-            		", bit rate="+(profile.videoBitRate/(1000*1000))+"MBPS";
+            		", bit rate="+(profile.videoBitRate/(1000*1000))+"MBPS"+", focus="+mFocusMode+
+            		", scene="+mSceneMode;
             mUiHandler.post(new Runnable(){
 				@Override
 				public void run() {
@@ -738,13 +738,13 @@ public class RecorderService extends Service {
     };
     
     private List<String> mSupportedFocusModeList=null;
-    private String mFocusMode="", mFlashMode="";
-    private boolean mScneModeAutoAvailable=false, mScneModeActionAvailable=false,
-    		mScneModeSportsAvailable=false;
+    private String mFocusMode="", mFlashMode="", mSceneMode="";
+    private boolean mSceneModeAutoAvailable=false, mSceneModeActionAvailable=false,
+    		mSceneModeSportsAvailable=false;
     private List<String> mSupportedFlashModeList=null;
     private List<Size> mSupportedPreviewSizeList=null;
     private List<Size> mSupportedVideoSizeList=null;
-    private List<String> mSupportedScneModeList=null;
+    private List<String> mSupportedSceneModeList=null;
     
     private void initCameraParms(Camera camera) {
     	
@@ -786,23 +786,23 @@ public class RecorderService extends Service {
         }
         mLog.addDebugMsg(1,"I","Flash mode is="+mFlashMode);
         
-        mSupportedScneModeList=p.getSupportedSceneModes();
-        if (mSupportedScneModeList!=null && mSupportedScneModeList.size()>0) {
+        mSupportedSceneModeList=p.getSupportedSceneModes();
+        if (mSupportedSceneModeList!=null && mSupportedSceneModeList.size()>0) {
         	mLog.addDebugMsg(1,"I","Available scne mode :");
-        	for (int i=0;i<mSupportedScneModeList.size();i++) {
-        		mLog.addDebugMsg(1,"I","   "+i+"="+mSupportedScneModeList.get(i));
-        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) {
-        			mScneModeAutoAvailable=true;
+        	for (int i=0;i<mSupportedSceneModeList.size();i++) {
+        		mLog.addDebugMsg(1,"I","   "+i+"="+mSupportedSceneModeList.get(i));
+        		if (mSupportedSceneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_AUTO)) {
+        			mSceneModeAutoAvailable=true;
         		}
-        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_ACTION)) {
-        			mScneModeActionAvailable=true;
+        		if (mSupportedSceneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_ACTION)) {
+        			mSceneModeActionAvailable=true;
         		}
-        		if (mSupportedScneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_SPORTS)) {
-        			mScneModeSportsAvailable=true;
+        		if (mSupportedSceneModeList.get(i).equals(Camera.Parameters.SCENE_MODE_SPORTS)) {
+        			mSceneModeSportsAvailable=true;
         		}
         	}
         } else {
-        	mLog.addDebugMsg(1,"I","Scne mode wwas not available");
+        	mLog.addDebugMsg(1,"I","Scene mode wwas not available");
         }
 
         mSupportedPreviewSizeList = p.getSupportedPreviewSizes();
@@ -927,6 +927,12 @@ public class RecorderService extends Service {
         if (mFocusMode.equals(Parameters.FOCUS_MODE_CONTINUOUS_VIDEO) ||
     		mFocusMode.equals(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE) ||
     		mFocusMode.equals(Parameters.FOCUS_MODE_AUTO)) {
+            if (mGp.settingsSceneModeActionEnabled) {
+            	if (mSceneModeActionAvailable || mSceneModeSportsAvailable) {
+            		if (mSceneModeActionAvailable) return false;
+            		else if (mSceneModeSportsAvailable) return false;
+            	}
+            }
         	return true;
         } else return false;
     };
@@ -1077,6 +1083,7 @@ public class RecorderService extends Service {
     	mLog.addDebugMsg(1,"I", "showPreview entered");
     	mPreviewAvailable=true;
        	WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
+       	mCameraPreviewTopText.setVisibility(TextView.VISIBLE);
 //       	mCameraPreviewTopText.setVisibility(TextView.VISIBLE);
         LayoutParams lp=(LayoutParams) mCameraPreviewFrame.getLayoutParams();
         lp.height=mSHowedScreenHeight;
@@ -1089,6 +1096,7 @@ public class RecorderService extends Service {
     	mLog.addDebugMsg(1,"I", "hidePreview entered");
     	mPreviewAvailable=false;
     	if (mCameraPreviewFrame!=null) {
+    		mCameraPreviewTopText.setVisibility(TextView.INVISIBLE);
 //    		mCameraPreviewTopText.setVisibility(TextView.INVISIBLE);
            	WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
             LayoutParams lp=(LayoutParams) mCameraPreviewFrame.getLayoutParams();
@@ -1104,14 +1112,17 @@ public class RecorderService extends Service {
 		return px;
 	};
 
-	private FrameLayout mCameraPreviewFrame=null;
+	private View mCameraPreviewFrame=null;
 	private TextView mCameraPreviewTopText=null;
+	@SuppressLint("InflateParams")
 	private void createCameraPreview() {
     	WindowManager windowManager = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
-    	mCameraPreviewFrame=new FrameLayout(this);
-    	mCameraPreviewTopText=new TextView(this);
-    	mCameraPreview = new SurfaceView(this);
-    	mFocusView = new SurfaceView(this);
+        LayoutInflater vi = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mCameraPreviewFrame = vi.inflate(R.layout.camera_preview, null);
+
+    	mCameraPreviewTopText=(TextView)mCameraPreviewFrame.findViewById(R.id.camera_preview_msg);
+    	mCameraPreview=(SurfaceView)mCameraPreviewFrame.findViewById(R.id.camera_preview_video);
+    	mFocusView=(SurfaceView)mCameraPreviewFrame.findViewById(R.id.camera_preview_focus);
     	mFocusView.getHolder().setFormat(PixelFormat.TRANSPARENT);
     	mCameraPreviewHolder=mCameraPreview.getHolder();
         LayoutParams lp_frame = new WindowManager.LayoutParams(
@@ -1121,14 +1132,8 @@ public class RecorderService extends Service {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         );
-        lp_frame.gravity = Gravity.CENTER | Gravity.BOTTOM;
-        LayoutParams lp_c_view = new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
-        lp_c_view.gravity = Gravity.CENTER | Gravity.TOP;
         windowManager.addView(mCameraPreviewFrame, lp_frame);
-        mCameraPreviewFrame.addView(mCameraPreview, lp_c_view);
-        mCameraPreviewFrame.addView(mFocusView, lp_c_view);
         mFocusView.setZOrderMediaOverlay(true);//setZOrderOnTop(true);
-        mCameraPreviewFrame.addView(mCameraPreviewTopText, lp_c_view);
         mCameraPreviewHolder.addCallback(new SurfaceHolder.Callback(){
 			@Override
 			public void surfaceCreated(SurfaceHolder holder) {

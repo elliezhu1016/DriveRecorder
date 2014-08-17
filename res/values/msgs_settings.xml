@@ -105,9 +105,9 @@
     <string name="settings_device_orientation_portrait_title">縦位置で録画</string>
     <string name="settings_device_orientation_portrait_summary">向きを縦にする（省略時の向きは横）</string>
 
-    <string name="settings_video_scne_mode_action_enabled">settings_video_scne_mode_action_enabled</string>
-    <string name="settings_video_scne_mode_action_enabled_title">シーン モード</string>
-    <string name="settings_video_scne_mode_action_enabled_summary">アクション/スポーツが利用できる場合は有効にする</string>
+    <string name="settings_video_scene_mode_action_enabled">settings_video_scene_mode_action_enabled</string>
+    <string name="settings_video_scene_mode_action_enabled_title">シーン モード</string>
+    <string name="settings_video_scene_mode_action_enabled_summary">アクション/スポーツが利用できる場合は有効にする</string>
     
     <string name="settings_record_sound">settings_record_sound</string>
     <string name="settings_record_sound_title">音声の録音</string>
