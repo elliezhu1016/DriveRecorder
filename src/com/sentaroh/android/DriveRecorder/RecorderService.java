@@ -954,27 +954,35 @@ public class RecorderService extends Service {
             	  //上記サイトを参考
             	  //
           	      int x=0, y=0;
+          	      int preview_width=0, preview_height=0;
           	      if (mGp.settingsDeviceOrientationPortrait) {
+//                  	  preview_width=p.getPreviewSize().height;
+//                  	  preview_height=p.getPreviewSize().width;
+                	  preview_width=p.getPreviewSize().width;
+                      preview_height=p.getPreviewSize().height;
               	      x = touch_y;
-//              	  y = (mCameraPreview.getWidth()-(int)event.getX());
               	      y = touch_x;
+//              	      y = (mCameraPreview.getWidth()-touch_x);
           	      } else {
               	      // 画面横置きの場合
           	    	  x = touch_x;
                   	  y = touch_y;
+                  	  preview_width=p.getPreviewSize().width;
+                      preview_height=p.getPreviewSize().height;
           	      }
           	    
           	      mLog.addDebugMsg(1, "I", "onTouch touch X="+touch_x+", y="+touch_y+
-          	    		", preview width="+p.getPreviewSize().width+", height="+p.getPreviewSize().height);
+          	    		  ", Converted preview width="+preview_width+", height="+preview_height+
+          	    		", Original Preview width="+p.getPreviewSize().width+", height="+p.getPreviewSize().height);
           	    
           	      // タッチした座標を[-1000,1000]の範囲に落としこむ
           	      int fx = 0, fy = 0;
           	      if (mGp.settingsDeviceOrientationPortrait) {
-              	      fx = x * 2000 / p.getPreviewSize().width - 1000;
-              	      fy = y * 2000 / p.getPreviewSize().width - 1000;
+              	      fx = x * 2000 / preview_width - 1000;
+              	      fy = y * 2000 / preview_width - 1000;
           	      } else {
-              	      fx = x * 2000 / p.getPreviewSize().width - 1000;
-              	      fy = y * 2000 / p.getPreviewSize().width - 1000;
+              	      fx = x * 2000 / preview_width - 1000;
+              	      fy = y * 2000 / preview_width - 1000;
           	      }
 
           	      // 上記の(x,y)を中央とした100x100の矩形領域を設定することにする
