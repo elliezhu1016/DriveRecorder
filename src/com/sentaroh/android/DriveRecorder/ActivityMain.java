@@ -296,20 +296,22 @@ public class ActivityMain extends FragmentActivity {
     	if (!isRecording()) {
     		menu.findItem(R.id.menu_top_start_recorder).setVisible(true);
     		menu.findItem(R.id.menu_top_stop_recorder).setVisible(false);
-    		menu.findItem(R.id.menu_top_refresh).setEnabled(true);
-    		menu.findItem(R.id.menu_top_settings).setEnabled(true);
-    		menu.findItem(R.id.menu_top_about_drive_recorder).setEnabled(true);
-    		menu.findItem(R.id.menu_top_manage_log).setEnabled(true);
+    		menu.findItem(R.id.menu_top_show_log).setVisible(true);
+    		menu.findItem(R.id.menu_top_refresh).setVisible(true);
+    		menu.findItem(R.id.menu_top_settings).setVisible(true);
+    		menu.findItem(R.id.menu_top_about_drive_recorder).setVisible(true);
+    		menu.findItem(R.id.menu_top_manage_log).setVisible(true);
     		menu.findItem(R.id.menu_top_start_autofocus).setVisible(false);
     	} else {
     		menu.findItem(R.id.menu_top_start_recorder).setVisible(false);
     		menu.findItem(R.id.menu_top_stop_recorder).setVisible(true);
-    		menu.findItem(R.id.menu_top_refresh).setEnabled(false);
-    		menu.findItem(R.id.menu_top_settings).setEnabled(false);
-    		menu.findItem(R.id.menu_top_about_drive_recorder).setEnabled(false);
-    		menu.findItem(R.id.menu_top_manage_log).setEnabled(false);
+    		menu.findItem(R.id.menu_top_show_log).setVisible(false);
+    		menu.findItem(R.id.menu_top_refresh).setVisible(false);
+    		menu.findItem(R.id.menu_top_settings).setVisible(false);
+    		menu.findItem(R.id.menu_top_about_drive_recorder).setVisible(false);
+    		menu.findItem(R.id.menu_top_manage_log).setVisible(false);
     		if (isAutoFocusAvailable()) {
-    			menu.findItem(R.id.menu_top_start_autofocus).setIcon(R.drawable.focus_enabled).setVisible(true);
+    			menu.findItem(R.id.menu_top_start_autofocus).setIcon(R.drawable.focus_successed).setVisible(true);
     		} else {
     			menu.findItem(R.id.menu_top_start_autofocus).setVisible(false);			
     		}

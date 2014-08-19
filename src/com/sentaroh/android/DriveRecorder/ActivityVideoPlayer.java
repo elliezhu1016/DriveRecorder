@@ -437,20 +437,26 @@ public class ActivityVideoPlayer extends FragmentActivity{
 //				File lf=new File(dir);
 //				File[] list=lf.listFiles();
 //				String fp="";
+//				Uri uri=null;
 //				if (list!=null && list.length>0) {
 //					for (int i=0;i<list.length;i++) {
 //						if (list[i].getName().endsWith(".jpg")) {
 //							fp=list[i].getPath();
+//							
+//							uri=getMediaUri(fp);
+//							Log.v("","uri="+uri);
 //							break;
 //						}
 //					}
 //				}
-				Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+//				final String REVIEW_ACTION = "com.android.camera.action.REVIEW";
 //				if (fp.equals("")) {
-//					intent.setDataAndType(Uri.parse("file://"+dir), "image/jpeg");
+//					uri=Uri.parse("file://"+dir);
 //				} else {
-//					intent.setDataAndType(Uri.parse("file://"+fp), "image/jpeg");
+//					uri=Uri.parse("file://"+fp);
 //				}
+				Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+//				Intent intent = new Intent(REVIEW_ACTION, uri);
 				intent.setType("image/jpeg");
 				startActivity(intent);
 			}
@@ -591,6 +597,39 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		});
 	};
 
+//    private Uri getMediaUri(String fp) {
+//    	Uri image_uri=null;
+//		Uri base_uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+//		Uri query = base_uri.buildUpon().appendQueryParameter("limit", "1").build();
+//		String [] projection = new String[] {ImageColumns.DATA, ImageColumns._ID};
+//		String selection = ImageColumns.MIME_TYPE + "='image/jpeg'";
+//		String order = ImageColumns.DATA;
+//		Cursor ci = null;
+//		try {
+//			ci = getContentResolver().query(base_uri, projection, selection, null, order);
+//			if( ci != null) {
+//		        while( ci.moveToNext() ){
+//		        	String file_path=ci.getString(ci.getColumnIndex( MediaStore.Images.Media.DATA));
+//		        	Log.v("","data="+file_path);
+//		        	if (file_path.equals(fp)) {
+//						long id = ci.getLong(ci.getColumnIndex( MediaStore.Images.Media._ID));
+//						image_uri = ContentUris.withAppendedId(base_uri, id);
+//						image_uri = base_uri;
+//						Log.v("","fp="+fp+", id="+id);
+//						break;
+//		        	}
+//		        }
+//		        ci.close();
+//			}
+//		}
+//		finally {
+//			if( ci != null ) {
+//				ci.close();
+//			}
+//		}
+//		return image_uri;
+//    };
+	
 	private void pauseVideoPlaying() {
 		stopVideoPlayer();
 		mIbStartStop.setImageResource(R.drawable.player_play_enabled);

@@ -30,6 +30,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -84,7 +85,8 @@ public class RecorderService extends Service {
 	private SurfaceHolder mCameraPreviewHolder=null;
 	private SurfaceView mCameraPreview=null;
 	private SurfaceView mFocusView=null;
-	private Bitmap mAutoFocusMark=null;
+	private Bitmap mAutoFocusMarkSuccessed=null;
+	private Bitmap mAutoFocusMarkFailed=null;
 
     private boolean mPreviewAvailable=false;
 
@@ -98,7 +100,7 @@ public class RecorderService extends Service {
 	
 	private WakeLock mWakeLock=null;
 	
-	private boolean mInitCameraParmCompleted=false;
+	private boolean mInitCameraParmCompleted=false, mInitCameraParmFailed=false;
 //    private String mVideoFilePath="";
     
     @Override
@@ -130,7 +132,8 @@ public class RecorderService extends Service {
     	initNotification();
 
     	mSleepReceiver=new SleepReceiver();
-        mAutoFocusMark=BitmapFactory.decodeResource(mContext.getResources(), R.drawable.focus_enabled);
+        mAutoFocusMarkSuccessed=BitmapFactory.decodeResource(mContext.getResources(), R.drawable.focus_successed);
+        mAutoFocusMarkFailed=BitmapFactory.decodeResource(mContext.getResources(), R.drawable.focus_failed);
     	
     	createCameraPreview();
     	hidePreview();
@@ -146,18 +149,34 @@ public class RecorderService extends Service {
     	Thread th_camera=new Thread(){
     		@Override
     		public void run(){
-    	    	Camera mc=Camera.open(0);
-    			initCameraParms(mc);
-    			mc.release();
-    			mInitCameraParmCompleted=true;
+    			obtainCameraInfo();
     		}
     	};
     	th_camera.setName("Camera");
     	th_camera.start();
     };
     
+    private void obtainCameraInfo() {
+		try {
+	    	Camera mc=Camera.open(0);
+			initCameraParms(mc);
+			mc.release();
+			mInitCameraParmCompleted=true;
+			mInitCameraParmFailed=false;
+		} catch(RuntimeException e) {
+			mInitCameraParmFailed=true;
+		}
+    };
+    
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		super.onStartCommand(intent, flags, startId);
+		if (mInitCameraParmFailed) {
+			obtainCameraInfo();
+			if (!mInitCameraParmCompleted) {
+				mLog.addDebugMsg(1,"I","ObtainCameraInfo failed, ignore request");
+				return START_STICKY; 
+			}
+		}
 		String action="";
 		if (intent!=null && intent.getAction()!=null) action=intent.getAction();
 		mLog.addDebugMsg(1,"I","onStartCommand entered, action="+action);
@@ -938,6 +957,7 @@ public class RecorderService extends Service {
     };
 
     private boolean mIsAutoFocusStarted=false;
+//    Matrix mMatrix=new Matrix();
     final private void startAutoFocus(int touch_x, int touch_y) {
         if (isAutoFocusAvailable() && !mIsAutoFocusStarted) {
         	mIsAutoFocusStarted=true;
@@ -947,66 +967,68 @@ public class RecorderService extends Service {
 //              List<Camera.Area>fl=p.getFocusAreas();
               if (touch_x==-1 && touch_y==-1) {
             	  mLog.addDebugMsg(1,"I", "Auto fucs area is not specified, center is assumed");
-            	  drawFocusMark(-1,-1);
+            	  drawFocusMark(-1,-1, false);
               } else {
-            	  //
-            	  //http://qiita.com/negi_magnet/items/e8d1b95a17da5539c261
-            	  //上記サイトを参考
-            	  //
-          	      int x=0, y=0;
-          	      int preview_width=0, preview_height=0;
-          	      if (mGp.settingsDeviceOrientationPortrait) {
-//                  	  preview_width=p.getPreviewSize().height;
-//                  	  preview_height=p.getPreviewSize().width;
-                	  preview_width=p.getPreviewSize().width;
-                      preview_height=p.getPreviewSize().height;
-              	      x = touch_y;
-              	      y = touch_x;
-//              	      y = (mCameraPreview.getWidth()-touch_x);
-          	      } else {
-              	      // 画面横置きの場合
-          	    	  x = touch_x;
-                  	  y = touch_y;
-                  	  preview_width=p.getPreviewSize().width;
-                      preview_height=p.getPreviewSize().height;
-          	      }
-          	    
-          	      mLog.addDebugMsg(1, "I", "onTouch touch X="+touch_x+", y="+touch_y+
-          	    		  ", Converted preview width="+preview_width+", height="+preview_height+
-          	    		", Original Preview width="+p.getPreviewSize().width+", height="+p.getPreviewSize().height);
-          	    
-          	      // タッチした座標を[-1000,1000]の範囲に落としこむ
-          	      int fx = 0, fy = 0;
-          	      if (mGp.settingsDeviceOrientationPortrait) {
-              	      fx = x * 2000 / preview_width - 1000;
-              	      fy = y * 2000 / preview_width - 1000;
-          	      } else {
-              	      fx = x * 2000 / preview_width - 1000;
-              	      fy = y * 2000 / preview_width - 1000;
-          	      }
+          		  float x=touch_x;
+          		  float y=touch_y;
+          		  float [] coords = {x, y};
+        	      Matrix camera_to_preview_matrix = new Matrix();
+        	      Matrix preview_to_camera_matrix = new Matrix();
+        		  camera_to_preview_matrix.reset();
+        		  boolean mirror=false;//true for front camera
+        		  camera_to_preview_matrix.setScale(mirror ? -1 : 1, 1);
+        		  int display_orientation=0;
+        		  if (mGp.settingsDeviceOrientationPortrait) display_orientation=90; 
+        		  camera_to_preview_matrix.postRotate(display_orientation);
+        		  camera_to_preview_matrix.postScale(mCameraPreview.getWidth() / 2000f, mCameraPreview.getHeight() / 2000f);
+        		  camera_to_preview_matrix.postTranslate(mCameraPreview.getWidth() / 2f, mCameraPreview.getHeight() / 2f);
+        		
+        		  if( !camera_to_preview_matrix.invert(preview_to_camera_matrix) ) {
+        			  mLog.addDebugMsg(1, "I", "Failed to invert matrix!?");
+        		  }
 
-          	      // 上記の(x,y)を中央とした100x100の矩形領域を設定することにする
-          	      // 矩形の端が[-1000,1000]を出ないように調整
-          	      if( fx < -950 ) fx = -950;
-          	      if( fx > 950  ) fx =  950;
-          	      if( fy < -950 ) fy = -950;
-          	      if( fy > 950  ) fy =  950;
+        		
+        		  preview_to_camera_matrix.mapPoints(coords);
+        		  float focus_x = coords[0];
+        		  float focus_y = coords[1];
+        		
+        		  int focus_size = 50;
+        		  Rect rect = new Rect();
+        		  rect.left = (int)focus_x - focus_size;
+        		  rect.right = (int)focus_x + focus_size;
+        		  rect.top = (int)focus_y - focus_size;
+        		  rect.bottom = (int)focus_y + focus_size;
+        		  if( rect.left < -1000 ) {
+        			  rect.left = -1000;
+        			  rect.right = rect.left + 2*focus_size;
+        		  } else if( rect.right > 1000 ) {
+        			  rect.right = 1000;
+        			  rect.left = rect.right - 2*focus_size;
+        		  }
+        		  if( rect.top < -1000 ) {
+        			  rect.top = -1000;
+        			  rect.bottom = rect.top + 2*focus_size;
+        		  } else if( rect.bottom > 1000 ) {
+        			  rect.bottom = 1000;
+        			  rect.top = rect.bottom - 2*focus_size;
+        		  }
 
-          	      // 矩形領域をセット
-          	      List<Camera.Area> area = new ArrayList<Camera.Area>();
-          	      area.add(new Camera.Area(new Rect(fx-50, fy-50, fx+50, fy+50), 1));
-          	      p.setFocusAreas(area);
+        		  mLog.addDebugMsg(1, "I", "Focus area paramteres x="+x+", y="+y+
+        				  ", focaus_x="+focus_x+", focus_y="+focus_y+
+        				  ", left="+rect.left+", right="+rect.left
+        				+", top="+rect.top+", bottom="+rect.bottom);
+        		
+        		  ArrayList<Camera.Area> areas = new ArrayList<Camera.Area>();
+        		  areas.add(new Camera.Area(rect, 1000));
+
+          	      p.setFocusAreas(areas);
           	      mServiceCamera.setParameters(p);
 
-          	      mLog.addDebugMsg(1,"I", "touch detected, x="+x+", y="+y+", fx="+fx+", fy="+fy);
-            	  
-            	  mLog.addDebugMsg(1,"I", "Auto focus area specified, bottom="+area.get(0).rect.bottom+", top="+area.get(0).rect.top+
-                  			", left="+area.get(0).rect.left+", right="+area.get(0).rect.right);
-            	  drawFocusMark(touch_x, touch_y);
+            	  drawFocusMark(touch_x, touch_y,false);
               }
           } else {
         	  mLog.addDebugMsg(1,"I", "Auto fucs area is not available, center is assumed");
-        	  drawFocusMark(-1,-1);
+        	  drawFocusMark(-1,-1,false);
           }
         	
           mServiceCamera.setAutoFocusMoveCallback(new AutoFocusMoveCallback(){
@@ -1019,29 +1041,7 @@ public class RecorderService extends Service {
 				@Override
 				public void onAutoFocus(boolean success, Camera camera) {
     				mLog.addDebugMsg(1,"I", "onAutoFocus entered, success="+success);
-    				if (!success) {
-    					Thread th=new Thread() {
-    						@Override
-    						public void run() {
-    	    					playBackRingtone("Notification/Spica.ogg");
-    						}
-    					};
-    					th.start();
-//    					Toast toast = Toast.makeText(mContext, 
-//    							mContext.getString(R.string.msgs_main_autofocus_failed), Toast.LENGTH_SHORT);
-//    					toast.show();
-    				} else {
-    					Thread th=new Thread() {
-    						@Override
-    						public void run() {
-    	    					playBackRingtone("Notification/CetiAlpha.ogg");
-    						}
-    					};
-    					th.start();
-    				}
 //    				mServiceCamera.cancelAutoFocus();
-    				mIsAutoFocusStarted=false;
-					mFocusView.setVisibility(SurfaceView.INVISIBLE);
     				Camera.Parameters p = mServiceCamera.getParameters();
     				float[] fad=new float[3];
     				p.getFocusDistances(fad);
@@ -1052,28 +1052,45 @@ public class RecorderService extends Service {
     					p.setFocusAreas(null);
     					mServiceCamera.setParameters(p);
     				}
+    				if (success) {
+    					drawFocusMark(mLastFocusMarkDrawPosX, mLastFocusMarkDrawPosY, true);
+    				}
+    				mUiHandler.postDelayed(new Runnable(){
+						@Override
+						public void run() {
+		    				mIsAutoFocusStarted=false;
+							mFocusView.setVisibility(SurfaceView.INVISIBLE);
+						}
+    				}, 1000);
 				}
           });
         }
     };
 
-    private void drawFocusMark(int mark_x, int mark_y) {
+    
+    private int mLastFocusMarkDrawPosX=0, mLastFocusMarkDrawPosY=0;
+    private void drawFocusMark(int mark_x, int mark_y, boolean success) {
+    	Bitmap bm=null;
+    	if (success) bm=mAutoFocusMarkSuccessed;
+    	else bm=mAutoFocusMarkFailed;
     	if (mark_x!=-1 && mark_y!=-1) {
-            Rect bm_rect=new Rect(0,0,mAutoFocusMark.getWidth(),mAutoFocusMark.getHeight());
+            Rect bm_rect=new Rect(0,0,bm.getWidth(),bm.getHeight());
             Canvas canvas=mFocusView.getHolder().lockCanvas();
             Rect fm_rect=new Rect(mark_x-63, mark_y-63, mark_x+63, mark_y+63);
-            canvas.drawBitmap(mAutoFocusMark, bm_rect, fm_rect, null);
+            canvas.drawBitmap(bm, bm_rect, fm_rect, null);
             mFocusView.getHolder().unlockCanvasAndPost(canvas);
     	} else {
-            Rect bm_rect=new Rect(0,0,mAutoFocusMark.getWidth(),mAutoFocusMark.getHeight());
+            Rect bm_rect=new Rect(0,0,bm.getWidth(),bm.getHeight());
             Canvas canvas=mFocusView.getHolder().lockCanvas();
             Rect v_rect=mFocusView.getHolder().getSurfaceFrame();
             int c_height=v_rect.bottom/2;
             int c_width=v_rect.right/2;
             Rect fm_rect=new Rect(c_width-63, c_height-63, c_width+63,c_height+63);
-            canvas.drawBitmap(mAutoFocusMark, bm_rect, fm_rect, null);
+            canvas.drawBitmap(bm, bm_rect, fm_rect, null);
             mFocusView.getHolder().unlockCanvasAndPost(canvas);
     	}
+    	mLastFocusMarkDrawPosX=mark_x;
+    	mLastFocusMarkDrawPosY=mark_y;
     };
     
     private boolean mActivityStarted=false;

@@ -13,7 +13,7 @@
           android:showAsAction="always|withText"/>
 	<item android:id="@+id/menu_top_start_autofocus"
           android:title="@string/msgs_main_menu_start_autofocus"
-          android:icon="@drawable/focus_enabled"
+          android:icon="@drawable/focus_successed"
           android:showAsAction="always|withText"/>
     <item android:id="@+id/menu_top_show_log"
           android:title="@string/msgs_main_menu_show_log" 
