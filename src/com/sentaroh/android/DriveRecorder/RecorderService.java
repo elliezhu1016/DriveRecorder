@@ -600,6 +600,8 @@ public class RecorderService extends Service {
             if (vr==0) profile.videoBitRate=1000*1000*br_ratio;
             else profile.videoBitRate=1000*1000*vr;
             
+//            profile.videoFrameRate=60;
+            
             mLog.addDebugMsg(1,"I","Selected video size width="+profile.videoFrameWidth+", height="+profile.videoFrameHeight+
             		", frame rate="+profile.videoFrameRate+", video bit rate="+profile.videoBitRate+
             		", audio bit rate=="+profile.audioBitRate+", sample rate="+profile.audioSampleRate);
@@ -1117,7 +1119,8 @@ public class RecorderService extends Service {
         wm.updateViewLayout(mCameraPreviewFrame, lp);
     };
     
-    private void hidePreview() {
+    @SuppressLint("RtlHardcoded")
+	private void hidePreview() {
     	mLog.addDebugMsg(1,"I", "hidePreview entered");
     	mPreviewAvailable=false;
     	if (mCameraPreviewFrame!=null) {

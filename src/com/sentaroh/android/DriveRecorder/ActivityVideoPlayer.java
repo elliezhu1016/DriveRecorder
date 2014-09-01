@@ -43,12 +43,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
@@ -93,6 +96,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private TextView mTvTitle=null;
 	private ImageButton mIbArchive=null;
 	private ImageButton mIbCapture=null;
+	private ImageButton mIbForward=null, mIbBackward=null;
 	private ImageButton mIbMediaPlayer=null;
 //	private LinearLayout mLayoutTop=null;
 //	private LinearLayout mLayoutBottom=null;
@@ -196,6 +200,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mIbShare=(ImageButton)findViewById(R.id.video_player_dlg_share);
 		mIbArchive=(ImageButton)findViewById(R.id.video_player_dlg_archive);
 		mIbCapture=(ImageButton)findViewById(R.id.video_player_dlg_capture);
+		mIbForward=(ImageButton)findViewById(R.id.video_player_dlg_forward);
+		mIbBackward=(ImageButton)findViewById(R.id.video_player_dlg_backward);
 		mIbMediaPlayer=(ImageButton)findViewById(R.id.video_player_dlg_start_media_player);
 		mTvTitle=(TextView)findViewById(R.id.video_player_dlg_title);
 //		mLayoutTop=(LinearLayout)findViewById(R.id.video_player_dlg_top_panel);
@@ -403,6 +409,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		});
 
 		setCaptureBtnEnabled(false);
+
 		mIbCapture.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -427,6 +434,52 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					}
 				};
 				th.start();
+			}
+		});
+
+		setForwardBtnEnabled(false);
+		mIbForward.setOnTouchListener(new OnTouchListener(){
+			@SuppressLint("ClickableViewAccessibility")
+			@Override
+			public boolean onTouch(View arg0, MotionEvent event) {
+//				Log.v("","action="+event.getAction());
+				if (mIsVideoPausing) {
+					if (event.getAction()==MotionEvent.ACTION_DOWN) {
+						if (mSlowStepActive) {
+							stopSlowStep();
+						}
+						mTcSlowStep.setEnabled();
+						startSlowStep(mTcSlowStep,"F");
+					} else if (event.getAction()==MotionEvent.ACTION_UP) {
+						stopSlowStep();
+					} else if (event.getAction()==MotionEvent.ACTION_CANCEL) {
+						stopSlowStep();
+					}
+				}
+				return false;
+			}
+		});
+		
+		setBackwardBtnEnabled(false);
+		mIbBackward.setOnTouchListener(new OnTouchListener(){
+			@SuppressLint("ClickableViewAccessibility")
+			@Override
+			public boolean onTouch(View arg0, MotionEvent event) {
+//				Log.v("","action="+event.getAction());
+				if (mIsVideoPausing) {
+					if (event.getAction()==MotionEvent.ACTION_DOWN) {
+						if (mSlowStepActive) {
+							stopSlowStep();
+						}
+						mTcSlowStep.setEnabled();
+						startSlowStep(mTcSlowStep,"B");
+					} else if (event.getAction()==MotionEvent.ACTION_UP) {
+						stopSlowStep();
+					} else if (event.getAction()==MotionEvent.ACTION_CANCEL) {
+						stopSlowStep();
+					}
+				}
+				return false;
 			}
 		});
 
@@ -520,7 +573,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				prepareVideo(mFileList.get(mCurrentSelectedPos).file_name);
 				mIsVideoPlaying=true;
 				mIsVideoPausing=false;
-				mIbStartStop.setImageResource(R.drawable.player_pause);
+				mIbStartStop.setImageResource(R.drawable.player_play_pause);
 				setCaptureBtnEnabled(false);
 				
 				setNextPrevBtnStatus();
@@ -538,7 +591,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				prepareVideo(mFileList.get(mCurrentSelectedPos).file_name);
 				mIsVideoPlaying=true;
 				mIsVideoPausing=false;
-				mIbStartStop.setImageResource(R.drawable.player_pause);
+				mIbStartStop.setImageResource(R.drawable.player_play_pause);
 				setCaptureBtnEnabled(false);
 				
 				setNextPrevBtnStatus();
@@ -548,11 +601,12 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mSbPlayPosition.setProgress(0);
 		mSbPlayPosition.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
 			@Override
-			public void onProgressChanged(SeekBar arg0, int progress, boolean byUser) {
+			public void onProgressChanged(SeekBar sb, int progress, boolean byUser) {
 //				Log.v("","seekTo="+progress+", max="+mSbPlayPosition.getMax()+", arg2="+arg2);
 				if (byUser) {
 					mMediaPlayer.seekTo(progress);
 					mTvPlayPosition.setText(getTimePosition(progress));
+					setSlowStepBtnEnabled(progress, sb.getMax());
 				}
 			}
 			@Override
@@ -575,7 +629,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					pauseVideoPlaying();
 				} else {
 					//Start
-					mIbStartStop.setImageResource(R.drawable.player_pause);
+					mIbStartStop.setImageResource(R.drawable.player_play_pause);
 					if (!mIsVideoPausing) {
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(true);
@@ -583,6 +637,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 						mIsVideoPlaying=true;
 						mIsVideoPausing=false;
 						setCaptureBtnEnabled(false);
+						setBackwardBtnEnabled(false);
+						setForwardBtnEnabled(false);
 					} else {
 						mSbPlayPosition.setEnabled(true);
 //						mMediaPlayer.start();
@@ -591,11 +647,97 @@ public class ActivityVideoPlayer extends FragmentActivity{
 						mTcPlayer.setEnabled();
 						startVideoThread();
 						setCaptureBtnEnabled(false);
+						setBackwardBtnEnabled(false);
+						setForwardBtnEnabled(false);
 					}
 				}
 			}
 		});
 	};
+
+	private Thread mThSlowStep=null;
+	private boolean mSlowStepActive=false;
+	private ThreadCtrl mTcSlowStep=new ThreadCtrl();
+	private void waitThreadTerminate() {
+		try {
+			mThSlowStep.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	};
+	
+	private void stopSlowStep() {
+		mTcSlowStep.setDisabled();
+		synchronized(mTcSlowStep) {
+			mTcSlowStep.notify();
+		}
+		waitThreadTerminate();
+	};
+		
+	private final int mStepIntervalTime=500;
+	private void startSlowStep(final ThreadCtrl tc, final String direction) {
+		final Handler hndl=new Handler();
+		mSlowStepActive=true;
+		mThSlowStep=new Thread(){
+			@Override
+			public void run() {
+				while(tc.isEnabled()) {
+					hndl.post(new Runnable(){
+						@Override
+						public void run() {
+							moveFrame(direction);
+						}
+					});
+					synchronized(tc) {
+						try {
+							tc.wait(100);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				mSlowStepActive=false;
+				tc.setEnabled();
+			}
+		};
+		SystemClock.sleep(100);
+		mThSlowStep.start();
+	};
+	
+	private void setSlowStepBtnEnabled(int pos, int max) {
+		if (pos>0) {
+			setBackwardBtnEnabled(true);
+		} else if (pos<=0) {
+			setBackwardBtnEnabled(false);
+		} 
+		if (pos>=max) {
+			setForwardBtnEnabled(false);
+			stopSlowStep();
+		} else if (pos<max) {
+			setForwardBtnEnabled(true);
+		}
+	};
+
+	private void moveFrame(String direction) {
+		int c_pos=mMediaPlayer.getCurrentPosition();
+		int c_max=mMediaPlayer.getDuration();
+		if (direction.equals("F")) {
+			int n_pos=c_pos+mStepIntervalTime;
+			if ((c_max-c_pos)<mStepIntervalTime) n_pos=c_max;
+			mMediaPlayer.seekTo(n_pos);
+			mSbPlayPosition.setProgress(n_pos);
+			mTvPlayPosition.setText(getTimePosition(n_pos));
+			setSlowStepBtnEnabled(n_pos,c_max);
+		} else {
+			int n_pos=0;
+			if (c_pos>mStepIntervalTime) n_pos=c_pos-mStepIntervalTime;
+			mMediaPlayer.seekTo(n_pos);
+			mSbPlayPosition.setProgress(n_pos);
+			mTvPlayPosition.setText(getTimePosition(n_pos));
+			setSlowStepBtnEnabled(n_pos,c_max);
+		}
+
+	}
 
 //    private Uri getMediaUri(String fp) {
 //    	Uri image_uri=null;
@@ -636,6 +778,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 //		mSbPlayPosition.setEnabled(false);
 		mIsVideoPausing=true;
 		setCaptureBtnEnabled(true);
+		setForwardBtnEnabled(true);
+		setBackwardBtnEnabled(true);
 	};
 	
 	private void setCaptureBtnEnabled(boolean p) {
@@ -644,6 +788,18 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		else mIbCapture.setImageResource(R.drawable.capture_disabled);
 	};
 	
+	private void setForwardBtnEnabled(boolean p) {
+		mIbForward.setEnabled(p);
+		if (p) mIbForward.setImageResource(R.drawable.player_fast_forward_enabled);
+		else mIbForward.setImageResource(R.drawable.player_fast_forward_disabled);
+	};
+
+	private void setBackwardBtnEnabled(boolean p) {
+		mIbBackward.setEnabled(p);
+		if (p) mIbBackward.setImageResource(R.drawable.player_fast_backward_enabled);
+		else mIbBackward.setImageResource(R.drawable.player_fast_backward_disabled);
+	};
+
 	private void putPicture(Bitmap bm) {
 		String dir=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()+"/";
 		String ftime=DateUtil.convDateTimeTo_YearMonthDayHourMinSec(System.currentTimeMillis())
@@ -772,6 +928,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					if (!mApplicationTerminated) {
 						mIbStartStop.setImageResource(R.drawable.player_play_enabled);
 						setCaptureBtnEnabled(true);
+						setForwardBtnEnabled(false);
+						setBackwardBtnEnabled(true);
 					}
 				}
 			});

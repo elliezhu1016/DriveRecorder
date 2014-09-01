@@ -18,7 +18,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="center"
         android:visibility="visible" />
-
+    
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
@@ -68,7 +68,6 @@
                     android:text="00:00"
                     android:textAppearance="?android:attr/textAppearanceMedium" />
             </LinearLayout>
-
         </LinearLayout>
 
         <ImageButton
@@ -142,7 +141,25 @@
             android:layout_alignTop="@+id/video_player_dlg_start_media_player"
             android:scaleType="centerCrop"
             android:src="@drawable/player_play_enabled" />
-        
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_forward"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/video_player_dlg_start_stop"
+            android:scaleType="centerCrop"
+            android:src="@drawable/player_fast_forward_disabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_backward"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/video_player_dlg_start_media_player"
+            android:scaleType="centerCrop"
+            android:src="@drawable/player_fast_backward_disabled" />
+
     </RelativeLayout>
 
 </FrameLayout>
