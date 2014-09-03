@@ -109,6 +109,10 @@
     <string name="settings_video_scene_mode_action_enabled_title">シーン モード</string>
     <string name="settings_video_scene_mode_action_enabled_summary">アクション/スポーツが利用できる場合は有効にする</string>
     
+    <string name="settings_video_stabilization_enabled">settings_video_stabilization_enabled</string>
+    <string name="settings_video_stabilization_enabled_title">ビデオ手ぶれ補正機能</string>
+    <string name="settings_video_stabilization_enabled_summary">ビデオ手ぶれ補正機能を有効にする</string>
+    														
     <string name="settings_record_sound">settings_record_sound</string>
     <string name="settings_record_sound_title">音声の録音</string>
     <string name="settings_record_sound_summary">音声を録音する</string>

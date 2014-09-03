@@ -42,7 +42,12 @@
 		android:key="settings_video_scene_mode_action_enabled"
 		android:title="@string/settings_video_scene_mode_action_enabled_title"
 		android:summary="@string/settings_video_scene_mode_action_enabled_summary" />
-  	
+
+  	<CheckBoxPreference
+		android:key="settings_video_stabilization_enabled"
+		android:title="@string/settings_video_stabilization_enabled_title"
+		android:summary="@string/settings_video_stabilization_enabled_summary" />
+  			
     <CheckBoxPreference
 		android:key="settings_record_sound"
 		android:title="@string/settings_record_sound_title"

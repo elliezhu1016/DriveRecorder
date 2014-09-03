@@ -183,6 +183,11 @@ public class ActivitySetting extends PreferenceActivity{
     		String ts=shared_pref.getString(key_string,"0");
     		String[] ts_label= c.getResources().getStringArray(R.array.settings_video_record_bitrate_list_entries);
     		pref_key.setSummary(ts_label[Integer.parseInt(ts)]);
+    	} else if (key_string.equals(c.getString(R.string.settings_video_stabilization_enabled))) {
+    		isChecked=true;
+    		if (!shared_pref.contains(key_string)) {
+    			shared_pref.edit().putBoolean(key_string, true).commit();
+    		}
     	} else if (key_string.equals(c.getString(R.string.settings_record_sound))) {
     		isChecked=true;
     	} else if (key_string.equals(c.getString(R.string.settings_video_scene_mode_action_enabled))) {
@@ -259,6 +264,7 @@ public class ActivitySetting extends PreferenceActivity{
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_max_video_keep_generation));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_quality));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_record_bitrate));
+    		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_stabilization_enabled));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_record_sound));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_video_scene_mode_action_enabled));
     		initSettingValueAfterHc(shared_pref,getString(R.string.settings_start_auto_focus_after_video_record_started));
