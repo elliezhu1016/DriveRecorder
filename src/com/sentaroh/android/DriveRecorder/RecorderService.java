@@ -88,6 +88,8 @@ public class RecorderService extends Service {
 	private Bitmap mAutoFocusMarkSuccessed=null;
 	private Bitmap mAutoFocusMarkFailed=null;
 
+	private boolean mVideoStabilization=false;
+	
     private boolean mPreviewAvailable=false;
 
 	private WidgetService mWidget=null;
@@ -490,6 +492,11 @@ public class RecorderService extends Service {
         }
         mLog.addDebugMsg(1,"I","Selected Preview video size : width = " + preview_width + " height = " + preview_height);
 
+        mVideoStabilization=false;
+        if (mGp.settingsVideoStabilizationEnabled && p.isVideoStabilizationSupported()) mVideoStabilization=true;
+    	mLog.addDebugMsg(1,"I","Video Stabilization="+mVideoStabilization);
+    	p.setVideoStabilization(mVideoStabilization);
+        
         p.setPreviewSize(preview_width, preview_height);
         p.setPreviewFormat(ImageFormat.NV21);
         mServiceCamera.setParameters(p);
@@ -621,7 +628,7 @@ public class RecorderService extends Service {
             mMediaRecorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
             final String t_msg="Video width="+profile.videoFrameWidth+", height="+profile.videoFrameHeight+
             		", bit rate="+(profile.videoBitRate/(1000*1000))+"MBPS"+", focus="+mFocusMode+
-            		", scene="+mSceneMode;
+            		", scene="+mSceneMode+", VS="+mVideoStabilization;
             mUiHandler.post(new Runnable(){
 				@Override
 				public void run() {

@@ -56,6 +56,8 @@ public class GlobalParameters extends Application{
 	
 	public boolean settingsDeviceOrientationPortrait=false;
 	public boolean settingsRecordSound=true;
+	
+	public boolean settingsVideoStabilizationEnabled=true;
 
 	public int settingsRecordingDuration=3;
 	public int settingsMaxVideoKeepGeneration=100;
@@ -106,6 +108,9 @@ public class GlobalParameters extends Application{
 		settingsRecordSound=
 				prefs.getBoolean(c.getString(R.string.settings_record_sound),true);
 		
+		settingsVideoStabilizationEnabled=
+				prefs.getBoolean(c.getString(R.string.settings_video_stabilization_enabled),true);
+		
 		settingsVideoPlaybackKeepAspectRatio=
 				prefs.getBoolean(c.getString(R.string.settings_video_playback_keep_aspect_ratio),true);
 		settingsVideoStartStopByVolumeKey=
@@ -144,6 +149,8 @@ public class GlobalParameters extends Application{
 			prefs.edit().putString(c.getString(R.string.settings_recording_duration),"3").commit();
 			prefs.edit().putString(c.getString(R.string.settings_max_video_keep_generation),"100").commit();
 			prefs.edit().putBoolean(c.getString(R.string.settings_record_sound),true).commit();
+			
+			prefs.edit().putBoolean(c.getString(R.string.settings_video_stabilization_enabled),true).commit();
 			
 			prefs.edit().putBoolean(c.getString(R.string.settings_video_playback_keep_aspect_ratio),true).commit();
 			prefs.edit().putBoolean(c.getString(R.string.settings_video_record_start_stop_by_volume_key),true).commit();
