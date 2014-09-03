@@ -18,7 +18,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="center"
         android:visibility="visible" />
-    
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
@@ -80,33 +80,6 @@
             android:src="@drawable/menu_trash" />
 
         <ImageButton
-            android:id="@+id/video_player_dlg_archive"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_above="@+id/video_player_dlg_share"
-            android:layout_alignParentLeft="true"
-            android:scaleType="centerCrop"
-            android:src="@drawable/archive_enabled" />
-
-        <ImageButton
-            android:id="@+id/video_player_dlg_share"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_alignParentRight="true"
-            android:layout_below="@+id/video_player_dlg_delete"
-            android:scaleType="centerCrop"
-            android:src="@drawable/share" />
-
-        <ImageButton
-            android:id="@+id/video_player_dlg_capture"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_alignParentLeft="true"
-            android:layout_alignTop="@+id/video_player_dlg_share"
-            android:scaleType="centerCrop"
-            android:src="@drawable/capture_enabled" />
-
-        <ImageButton
             android:id="@+id/video_player_dlg_next"
             android:layout_width="60dp"
             android:layout_height="60dp"
@@ -140,7 +113,7 @@
             android:layout_alignParentRight="true"
             android:layout_alignTop="@+id/video_player_dlg_start_media_player"
             android:scaleType="centerCrop"
-            android:src="@drawable/player_play_enabled" />
+            android:src="@drawable/player_play_disabled" />
 
         <ImageButton
             android:id="@+id/video_player_dlg_forward"
@@ -159,6 +132,33 @@
             android:layout_below="@+id/video_player_dlg_start_media_player"
             android:scaleType="centerCrop"
             android:src="@drawable/player_fast_backward_disabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_archive"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignTop="@+id/video_player_dlg_delete"
+            android:scaleType="centerCrop"
+            android:src="@drawable/archive_enabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_capture"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/video_player_dlg_archive"
+            android:scaleType="centerCrop"
+            android:src="@drawable/capture_enabled" />
+
+        <ImageButton
+            android:id="@+id/video_player_dlg_share"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignTop="@+id/video_player_dlg_capture"
+            android:scaleType="centerCrop"
+            android:src="@drawable/share" />
 
     </RelativeLayout>
 

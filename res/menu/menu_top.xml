@@ -1,12 +1,4 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-	<item android:id="@+id/menu_top_start_recorder"
-          android:title="@string/msgs_main_menu_start" 
-          android:icon="@drawable/ic_48_start_recorder"
-          android:showAsAction="always|withText"/>
-    <item android:id="@+id/menu_top_stop_recorder"
-          android:title="@string/msgs_main_menu_stop" 
-          android:icon="@drawable/ic_48_stop_recorder"
-          android:showAsAction="always|withText"/>
     <item android:id="@+id/menu_top_refresh"
           android:title="@string/msgs_main_menu_refresh" 
           android:icon="@drawable/ic_48_menu_refresh"
@@ -15,6 +7,16 @@
           android:title="@string/msgs_main_menu_start_autofocus"
           android:icon="@drawable/focus_successed"
           android:showAsAction="always|withText"/>
+	
+	<item android:id="@+id/menu_top_start_recorder"
+          android:title="@string/msgs_main_menu_start" 
+          android:icon="@drawable/ic_48_start_recorder"
+          android:showAsAction="always|withText"/>
+    <item android:id="@+id/menu_top_stop_recorder"
+          android:title="@string/msgs_main_menu_stop" 
+          android:icon="@drawable/ic_48_stop_recorder"
+          android:showAsAction="always|withText"/>
+		
     <item android:id="@+id/menu_top_show_log"
           android:title="@string/msgs_main_menu_show_log" 
           android:icon="@drawable/ic_32_bw_browse_text"

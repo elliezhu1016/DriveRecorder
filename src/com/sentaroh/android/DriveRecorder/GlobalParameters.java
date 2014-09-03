@@ -236,6 +236,7 @@ public class GlobalParameters extends Application{
     	byte[] result=null;
     	synchronized(thumnailCacheList) {
         	for (int i=0;i<thumnailCacheList.size();i++) {
+//        		Log.v("","tn path="+thumnailCacheList.get(i).file_path+", fp="+fp);
         		if (thumnailCacheList.get(i).file_path.equals(fp)) {
         			result=thumnailCacheList.get(i).thumnail_byte_array;
         			break;
