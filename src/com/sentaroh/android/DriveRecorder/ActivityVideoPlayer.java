@@ -46,7 +46,6 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -84,9 +83,13 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private SurfaceHolder mSurfaceHolder=null;
 //	private Activity mActivity=null;
 
-	private boolean mIsVideoPlaying=false, mIsVideoPausing=false;
+	private final static int VIDEO_STATUS_STOPPED=0;
+	private final static int VIDEO_STATUS_PLAYING=1;
+	private final static int VIDEO_STATUS_PAUSING=2;
+	private int mVideoPlayerStatus=VIDEO_STATUS_STOPPED;
+	
 	private boolean mIsVideoReadyToBePlayed=true;
-	private boolean mIsPlayingRequiredAfterMoveFrame=false;
+	private boolean mIsPlayRequiredAfterMoveFrame=false;
 	
 	private SeekBar mSbPlayPosition=null;
 	private TextView mTvPlayPosition=null;
@@ -127,7 +130,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	    getWindowManager().getDefaultDisplay().getSize(dsz);
 //	    Log.v("","x="+dsz.x+", y="+dsz.y);
 	    
-	    if (mIsVideoPlaying || mIsVideoPausing) {
+	    if (!isVideoPlayerStatusStopped()) {
 			if (mGp.settingsVideoPlaybackKeepAspectRatio) {
 			    float video_Width = mMediaPlayer.getVideoWidth();
 			    float video_Height = mMediaPlayer.getVideoHeight();
@@ -234,7 +237,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
     public void onPause() {
     	super.onPause();
     	mLog.addDebugMsg(1,"I","onPause entered");
-    	if (mIsVideoPlaying && !mIsVideoPausing) {
+    	if (isVideoPlayerStatusPlaying()) {
     		pauseVideoPlaying();
     	}
     };
@@ -250,7 +253,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
     	super.onDestroy();
     	mLog.addDebugMsg(1,"I","onDestroy entered");
     	mApplicationTerminated=true;
-		if (mIsVideoPlaying || mIsVideoPausing) {
+		if (!isVideoPlayerStatusStopped()) {
 			mMediaPlayer.stop();
 			mMediaPlayer.reset();
 		}
@@ -341,12 +344,12 @@ public class ActivityVideoPlayer extends FragmentActivity{
         mSurfaceHolder.addCallback(new SurfaceHolder.Callback(){
 			@Override
 			public void surfaceCreated(SurfaceHolder holder) {
-				mLog.addDebugMsg(1,"I","surfaceCreated entered, playing="+mIsVideoPlaying+", pausing="+mIsVideoPausing);
+				mLog.addDebugMsg(1,"I","surfaceCreated entered, Player status="+getVideoPlayerStatus());
 				if (mIsVideoReadyToBePlayed) {
 					mIsVideoReadyToBePlayed=false;
 					mIbPlay.performClick();
 				} else {
-					if (mIsVideoPausing) {
+					if (isVideoPlayerStatusPausing()) {
 						mMediaPlayer.setDisplay(mSurfaceHolder);
 						mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition());
 					}
@@ -356,15 +359,15 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			@Override
 			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 				mLog.addDebugMsg(1,"I","surfaceChanged entered, width="+width+", height="+height+
-						", playing="+mIsVideoPlaying+", pausing="+mIsVideoPausing);
+						", Player status="+getVideoPlayerStatus());
 			};
 
 			@Override
 			public void surfaceDestroyed(SurfaceHolder holder) {
-				mLog.addDebugMsg(1,"I","surfaceDestroyed entered, playing="+mIsVideoPlaying+", pausing="+mIsVideoPausing);
-				if (mIsVideoPlaying) {
+				mLog.addDebugMsg(1,"I","surfaceDestroyed entered, Player status="+getVideoPlayerStatus());
+				if (isVideoPlayerStatusPlaying()) {
 					mMediaPlayer.pause();
-					mIsVideoPausing=true;
+					setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
 				}
 			};
         });
@@ -393,8 +396,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					public void positiveResponse(Context c, Object[] o) {
 						stopVideoPlayer();
 						stopMediaPlayer();
-						mIsVideoPlaying=false;
-						mIsVideoPausing=false;
+						setVideoPlayerStatus(VIDEO_STATUS_STOPPED);
 						setPlayBtnEnabled(true);
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(false);
@@ -413,8 +415,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 							mSbPlayPosition.setProgress(0);
 							mSbPlayPosition.setEnabled(true);
 							prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-							mIsVideoPlaying=true;
-							mIsVideoPausing=false;
+							setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 							setPlayBtnPause(true);
 							
 //							setNextPrevBtnStatus();
@@ -486,16 +487,17 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			@Override
 			public boolean onTouch(View arg0, MotionEvent event) {
 //				Log.v("","action="+event.getAction());
-				if (mIsVideoPlaying) {
-					if (!mIsVideoPausing) mIsPlayingRequiredAfterMoveFrame=true;
+//				Log.v("","forward Player status="+getVideoPlayerStatus()+
+//						", mIsPlayRequiredAfterMoveFrame="+mIsPlayRequiredAfterMoveFrame);
+				if (isVideoPlayerStatusPlaying()) {
+					mIsPlayRequiredAfterMoveFrame=true;
 					pauseVideoPlaying();
 				} else {
-					if (!mIsVideoPlaying && !mIsVideoPausing) {
+					if (isVideoPlayerStatusStopped()) {
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(true);
 						prepareVideo(false,mFileList.get(mCurrentSelectedPos).file_name);
-						mIsVideoPlaying=true;
-						mIsVideoPausing=false;
+						setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 					}
 				}
 				if (event.getAction()==MotionEvent.ACTION_DOWN) {
@@ -506,12 +508,18 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					startMoveFrame(mTcMoveFrame,"F");
 				} else if (event.getAction()==MotionEvent.ACTION_UP) {
 					stopMoveFrame();
-					if (mIsPlayingRequiredAfterMoveFrame) resumePlayVideo();
-					mIsPlayingRequiredAfterMoveFrame=false;
+					if (mIsPlayRequiredAfterMoveFrame) {
+						setPlayBtnPause(true);
+						resumePlayVideo();
+					}
+					mIsPlayRequiredAfterMoveFrame=false;
 				} else if (event.getAction()==MotionEvent.ACTION_CANCEL) {
 					stopMoveFrame();
-					if (mIsPlayingRequiredAfterMoveFrame) resumePlayVideo();
-					mIsPlayingRequiredAfterMoveFrame=false;
+					if (mIsPlayRequiredAfterMoveFrame) {
+						setPlayBtnPause(true);
+						resumePlayVideo();
+					}
+					mIsPlayRequiredAfterMoveFrame=false;
 				}
 				return false;
 			}
@@ -522,16 +530,15 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			@SuppressLint("ClickableViewAccessibility")
 			@Override
 			public boolean onTouch(View arg0, MotionEvent event) {
-				if (mIsVideoPlaying) {
-					if (!mIsVideoPausing) mIsPlayingRequiredAfterMoveFrame=true;
+				if (isVideoPlayerStatusPlaying()) {
+					mIsPlayRequiredAfterMoveFrame=true;
 					pauseVideoPlaying();
 				} else {
-					if (!mIsVideoPlaying && !mIsVideoPausing) {
+					if (isVideoPlayerStatusStopped()) {
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(true);
 						prepareVideo(false,mFileList.get(mCurrentSelectedPos).file_name);
-						mIsVideoPlaying=true;
-						mIsVideoPausing=false;
+						setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 					}
 				}
 				if (event.getAction()==MotionEvent.ACTION_DOWN) {
@@ -542,12 +549,18 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					startMoveFrame(mTcMoveFrame,"B");
 				} else if (event.getAction()==MotionEvent.ACTION_UP) {
 					stopMoveFrame();
-					if (mIsPlayingRequiredAfterMoveFrame) resumePlayVideo();
-					mIsPlayingRequiredAfterMoveFrame=false;
+					if (mIsPlayRequiredAfterMoveFrame) {
+						setPlayBtnPause(true);
+						resumePlayVideo();
+					}
+					mIsPlayRequiredAfterMoveFrame=false;
 				} else if (event.getAction()==MotionEvent.ACTION_CANCEL) {
 					stopMoveFrame();
-					if (mIsPlayingRequiredAfterMoveFrame) resumePlayVideo();
-					mIsPlayingRequiredAfterMoveFrame=false;
+					if (mIsPlayRequiredAfterMoveFrame) {
+						setPlayBtnPause(true);
+						resumePlayVideo();
+					}
+					mIsPlayRequiredAfterMoveFrame=false;
 				}
 				return false;
 			}
@@ -598,8 +611,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					public void positiveResponse(Context c, Object[] o) {
 						stopVideoPlayer();
 						stopMediaPlayer();
-						mIsVideoPlaying=false;
-						mIsVideoPausing=false;
+						setVideoPlayerStatus(VIDEO_STATUS_STOPPED);
 						setPlayBtnEnabled(true);
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(false);
@@ -624,8 +636,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 								mSbPlayPosition.setProgress(0);
 								mSbPlayPosition.setEnabled(true);
 								prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-								mIsVideoPlaying=true;
-								mIsVideoPausing=false;
+								setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 								setPlayBtnPause(true);
 								
 //								setNextPrevBtnStatus();
@@ -661,8 +672,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				mSbPlayPosition.setEnabled(true);
 				mCurrentSelectedPos--;
 				prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-				mIsVideoPlaying=true;
-				mIsVideoPausing=false;
+				setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 				setPlayBtnPause(true);
 				
 //				setNextPrevBtnStatus();
@@ -679,8 +689,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				mSbPlayPosition.setEnabled(true);
 				mCurrentSelectedPos++;
 				prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-				mIsVideoPlaying=true;
-				mIsVideoPausing=false;
+				setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 				setPlayBtnPause(true);
 //				setNextPrevBtnStatus();
 				setNextPrevBtnDisabled();
@@ -713,18 +722,17 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mIbPlay.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-//				Log.v("","mIsVideoPlaying="+mIsVideoPlaying+", mIsVideoPausing="+mIsVideoPausing);
-				if (mIsVideoPlaying) {
+//				Log.v("","isVideoPlayerStatusPlaying()="+isVideoPlayerStatusPlaying()+", isVideoPlayerStatusPausing()="+isVideoPlayerStatusPausing());
+				if (isVideoPlayerStatusPlaying()) {
 					pauseVideoPlaying();
 				} else {
 					//Start
 					setPlayBtnPause(true);
-					if (!mIsVideoPausing) {
+					if (isVideoPlayerStatusStopped()) {
 						mSbPlayPosition.setProgress(0);
 						mSbPlayPosition.setEnabled(true);
 						prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-						mIsVideoPlaying=true;
-						mIsVideoPausing=false;
+						setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 					} else {
 						resumePlayVideo();
 					}
@@ -734,7 +742,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	};
 
 	private void resumePlayVideo() {
-		Log.v("","resumePlayvideo");
+//		Log.v("","resumePlayvideo");
 		int c_pos=mMediaPlayer.getCurrentPosition();
 		int c_max=mMediaPlayer.getDuration();
 		if (c_pos>=c_max) {
@@ -743,8 +751,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		}
 		mSbPlayPosition.setEnabled(true);
 //		mMediaPlayer.start();
-		mIsVideoPlaying=true;
-		mIsVideoPausing=false;
+		setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 		mTcPlayer.setEnabled();
 		startVideoThread();
 	};
@@ -807,17 +814,22 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		} else if (pos<=0) {
 			setBackwardBtnEnabled(false);
 			stopMoveFrame();
+			setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
+			mIsPlayRequiredAfterMoveFrame=false;
 		} 
 		if (pos>=max) {
 			setForwardBtnEnabled(false);
 			stopMoveFrame();
+			setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
+			mIsPlayRequiredAfterMoveFrame=false;
+//			Log.v("","forward disabled playing="+isVideoPlayerStatusPlaying()+", mIsPlayRequiredAfterMoveFrame="+mIsPlayRequiredAfterMoveFrame);
 		} else if (pos<max) {
 			setForwardBtnEnabled(true);
 		}
 	};
 
 	private void moveFrame(String direction) {
-		Log.v("","moveFrame entered");
+//		Log.v("","moveFrame entered");
 		int c_pos=mMediaPlayer.getCurrentPosition();
 		int c_max=mMediaPlayer.getDuration();
 		if (direction.equals("F")) {
@@ -875,7 +887,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		stopVideoPlayer();
 		setPlayBtnEnabled(true);
 //		mSbPlayPosition.setEnabled(false);
-		mIsVideoPausing=true;
+		setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
 //		setCaptureBtnEnabled(true);
 //		setForwardBtnEnabled(true);
 //		setBackwardBtnEnabled(true);
@@ -974,10 +986,9 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	};
 	
 	private void stopVideoPlayer() {
-		if (mIsVideoPlaying) {
+		if (isVideoPlayerStatusPlaying()) {
 			mMediaPlayer.pause();
-			mIsVideoPlaying=false;
-			mIsVideoPausing=true;
+			setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
 			stopVideoThread();
 		} 
 	};
@@ -991,7 +1002,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	};
 	
 	private void setPlayBtnEnabled(boolean p) {
-		Log.v("","play="+p);
+//		Log.v("","play="+p);
 		if(p) {
 			mIbPlay.setEnabled(true);
 			mIbPlay.setImageResource(R.drawable.player_play_enabled);
@@ -1031,8 +1042,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private MediaPlayer mMediaPlayer=null;
 	private ThreadCtrl mTcPlayer=null;
 	private void prepareVideo(final boolean start, final String fp) {
-		mLog.addDebugMsg(1,"I","prepareVideo entered, fp="+fp+", mIsVideoPlaying="+mIsVideoPlaying);
-		if (mIsVideoPlaying) return;
+		mLog.addDebugMsg(1,"I","prepareVideo entered, fp="+fp+", Player status="+getVideoPlayerStatus());
+		if (isVideoPlayerStatusPlaying()) return;
 		mTcPlayer.setEnabled();
 		mSurfaceView.setVisibility(SurfaceView.VISIBLE);
 		mThumnailView.setVisibility(SurfaceView.INVISIBLE);
@@ -1051,8 +1062,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				@Override
 				public void onCompletion(MediaPlayer mp) {
 					mLog.addDebugMsg(1,"I","onCompletion called");
-					mIsVideoPlaying=false;
-					mIsVideoPausing=true;
+					setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
 					mMediaPlayer.pause();
 					stopVideoThread();
 //					if (!mApplicationTerminated) {
@@ -1109,8 +1119,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					    mMediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT);
 					}
 
-					mIsVideoPlaying=true;
-					mIsVideoPausing=false;
+					setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 					startVideoThread();
 					setNextPrevBtnStatus();
 				}
@@ -1122,7 +1131,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				}
 			});
 
-			mIsVideoPlaying=true;
+			setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 			mMediaPlayer.setDataSource(mVideoFolder+fp);
 			mMediaPlayer.setDisplay(mSurfaceHolder);
 			mMediaPlayer.prepareAsync();
@@ -1213,13 +1222,13 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			public void run() {
 				mMediaPlayer.start();
 				final int interval=100;
-				while (!mIsVideoPausing && mIsVideoPlaying) {
+				while (isVideoPlayerStatusPlaying()) {
 					try {
-						if (!mIsVideoPausing && mIsVideoPlaying) {
+						if (isVideoPlayerStatusPlaying()) {
 							mUiHandler.post(new Runnable(){
 								@Override
 								public void run() {
-									if (!mIsVideoPausing && mIsVideoPlaying) {
+									if (isVideoPlayerStatusPlaying()) {
 										int cp=mMediaPlayer.getCurrentPosition();
 //										int cp=mSbPlayPosition.getProgress();
 										mSbPlayPosition.setProgress(cp+interval);
@@ -1244,6 +1253,12 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					}
 				}
 				mLog.addDebugMsg(1,"I", "startVideoThread expired");
+				mUiHandler.post(new Runnable(){
+					@Override
+					public void run() {
+						setPlayBtnEnabled(true);
+					}
+				});
 			}
 		};
 		mPlayerThread.setName("Player");
@@ -1251,8 +1266,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	};
 
 	private void stopMediaPlayer() {
-		mIsVideoPlaying=false;
-		mIsVideoPausing=false;
+		setVideoPlayerStatus(VIDEO_STATUS_STOPPED);
 		try {
 			mMediaPlayer.reset();
 //			mMediaPlayer.release();
@@ -1270,6 +1284,22 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		public void onScanCompleted(String path, Uri uri) {
 			mLog.addDebugMsg(1,"I", "Scan completed path="+path+", uri="+uri);
 		}
+	};
+
+	private void setVideoPlayerStatus(int p) {
+		mVideoPlayerStatus=p;
+	};
+	private int getVideoPlayerStatus() {
+		return mVideoPlayerStatus;
+	};
+	private boolean isVideoPlayerStatusStopped() {
+		return mVideoPlayerStatus == VIDEO_STATUS_STOPPED;
+	};
+	private boolean isVideoPlayerStatusPlaying() {
+		return mVideoPlayerStatus == VIDEO_STATUS_PLAYING;
+	};
+	private boolean isVideoPlayerStatusPausing() {
+		return mVideoPlayerStatus == VIDEO_STATUS_PAUSING;
 	};
 
 	private int deleteMediaStoreItem(String fp) {
@@ -1313,7 +1343,5 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		if (mt==null) return "";
 		else return mt;
 	};
-
-
 }
 
