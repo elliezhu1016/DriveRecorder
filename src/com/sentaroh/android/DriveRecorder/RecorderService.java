@@ -735,11 +735,12 @@ public class RecorderService extends Service {
         	    				| PowerManager.ON_AFTER_RELEASE, "DriveRecorder-ThumnailCache");
         		   	try {
             		   	wl.acquire();
+            		   	SystemClock.sleep(1000);
                     	String[] paths = new String[] {sfp};
                     	MediaScannerConnection.scanFile(getApplicationContext(), paths, null, mOnScanCompletedListener);
                     	mGp.addThumnailCache(sfp);
                     	mGp.saveThumnailCacheList();
-                    	mLog.addDebugMsg(1, "I", "Thunail cache was saved");
+                    	mLog.addDebugMsg(1, "I", "Thumnail cache was saved");
                     	
         		        try {
         		        	if (mActCallback!=null && mActCallback.size()>0) {
