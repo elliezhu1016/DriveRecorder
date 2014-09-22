@@ -398,6 +398,7 @@ public class RecorderService extends Service {
 				mLog.addDebugMsg(1,"I", "Interval recorder thread ended");
 			}
 		};
+		th.setPriority(Thread.MAX_PRIORITY);
 		th.setName("IntervalRecorder");
 		th.start();
 	};
