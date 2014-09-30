@@ -31,6 +31,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.DialogInterface.OnKeyListener;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
@@ -40,6 +41,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -73,6 +75,8 @@ public class LogFileListDialogFragment extends DialogFragment{
 	private LogFileListDialogFragment mFragment=null;
 	private String mDialogTitle=null;
 	private GlobalParameters mGlblParms=null;
+	
+	private LogFileListAdapter mLogFileManagementAdapter=null;
 	
 	private Context mContext=null;
 	
@@ -172,6 +176,34 @@ public class LogFileListDialogFragment extends DialogFragment{
 	    super.onStart();
 	    if (DEBUG_ENABLE) Log.v(APPLICATION_TAG,"onStart");
 	    if (mTerminateRequired) mDialog.cancel();
+	    else {
+	    	mDialog.setOnKeyListener(new OnKeyListener(){
+    	        @Override
+	    	    public boolean onKey ( DialogInterface dialog , int keyCode , KeyEvent event ){
+	    	        // disable search button action
+	    	        if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction()==KeyEvent.ACTION_DOWN){
+	    	        	boolean selected=false;
+	    	        	for(int i=0;i<mLogFileManagementAdapter.getCount();i++) {
+	    	        		if (mLogFileManagementAdapter.getItem(i).isChecked) {
+	    	        			selected=true;
+	    	        			break;
+	    	        		}
+	    	        	}
+	    	        	if (selected) {
+		    	        	for(int i=0;i<mLogFileManagementAdapter.getCount();i++) {
+		    	        		mLogFileManagementAdapter.getItem(i).isChecked=false;
+		    	        	}
+		    	        	mLogFileManagementAdapter.notifyDataSetChanged();
+		    	        	return true;
+	    	        	} else {
+		    	            return false;
+	    	        	}
+	    	        }
+	    	        return false;
+	    	    }
+	    	});
+	    }
+
 	};
 	
 	@Override
@@ -242,24 +274,24 @@ public class LogFileListDialogFragment extends DialogFragment{
     	final ListView lv_log_file=(ListView)mDialog.findViewById(R.id.log_file_list_dlg_log_listview);
     	final Button btn_close=(Button)mDialog.findViewById(R.id.log_file_list_dlg_log_close);
     	
-    	final LogFileListAdapter lfm_adapter=
+    	mLogFileManagementAdapter=
     				new LogFileListAdapter(mContext, R.layout.log_file_list_item,mLogFileList);
-    	lv_log_file.setAdapter(lfm_adapter);
+    	lv_log_file.setAdapter(mLogFileManagementAdapter);
     	
     	lv_log_file.setOnItemClickListener(new OnItemClickListener(){
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View arg1, int pos, long arg3) {
-				if (lfm_adapter.getItem(0).log_file_name==null) return;
-				if (!isLogFileItemSelected(lfm_adapter)) processSelectedLogFile(lfm_adapter,pos);
-				else lfm_adapter.getItem(pos).isChecked=!lfm_adapter.getItem(pos).isChecked;
-				lfm_adapter.notifyDataSetChanged();
+				if (mLogFileManagementAdapter.getItem(0).log_file_name==null) return;
+				if (!isLogFileItemSelected(mLogFileManagementAdapter)) processSelectedLogFile(mLogFileManagementAdapter,pos);
+				else mLogFileManagementAdapter.getItem(pos).isChecked=!mLogFileManagementAdapter.getItem(pos).isChecked;
+				mLogFileManagementAdapter.notifyDataSetChanged();
 			}
     	});
     	
     	lv_log_file.setOnItemLongClickListener(new OnItemLongClickListener(){
 			@Override
 			public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int pos, long arg3) {
-				createContextMenu(lfm_adapter,pos);
+				createContextMenu(mLogFileManagementAdapter,pos);
 				return true;
 			}
     	});
@@ -290,37 +322,61 @@ public class LogFileListDialogFragment extends DialogFragment{
     	return result;
     };
     
-    private void createContextMenu(LogFileListAdapter lfm_adapter, int pos) {
+    private void createContextMenu(LogFileListAdapter lfm_adapter, int idx) {
     	if (lfm_adapter.getItem(0).log_file_name==null) return;
-    	LogFileListItem item;
-		int scn=0;
-//		int cp=mGlblParms.profileListView.getFirstVisiblePosition();
+		int prev_selected_cnt=0;
 		for (int i=0;i<lfm_adapter.getCount();i++) {
 			if (lfm_adapter.getItem(i).isChecked) {
-				scn++; 
+				prev_selected_cnt++;
 			}
 		}
-		if (scn<=1) {//single selection 
+		if (prev_selected_cnt==0) {//Not selected
+			lfm_adapter.getItem(idx).isChecked=true;
+			lfm_adapter.notifyDataSetChanged();
+			createContextMenuSingle(lfm_adapter,idx);
+		} else if (prev_selected_cnt==1) {//Previous selected was single
 			for (int i=0;i<lfm_adapter.getCount();i++) {
-				item = lfm_adapter.getItem(i);
-				if (pos==i) {// set checked
-					item.isChecked=true;
-					scn=i;//set new index no 
-				} else {
-					if (item.isChecked) {//reset unchecked
-						item.isChecked=false;
+				if (lfm_adapter.getItem(i).isChecked) {
+					if (i!=idx) {
+						setLogFileItemChecked(lfm_adapter,i,false);
+						setLogFileItemChecked(lfm_adapter,idx,true);
+						lfm_adapter.notifyDataSetChanged();
 					}
 				}
 			}
-			lfm_adapter.notifyDataSetChanged();
-			createContextMenuSingle(lfm_adapter,pos);
+			createContextMenuSingle(lfm_adapter,idx);
 		} else {
-			createContextMenuMultiple(lfm_adapter);
+			boolean already_selected=false;
+			for (int i=0;i<lfm_adapter.getCount();i++) {
+				if (lfm_adapter.getItem(i).isChecked) {
+					if (i==idx) {
+						already_selected=true;
+						break;
+					}
+				}
+			}
+			if (already_selected) {
+				createContextMenuMultiple(lfm_adapter);
+			} else {
+				setAllLogFileItemChecked(lfm_adapter,false);
+				setLogFileItemChecked(lfm_adapter,idx,true);
+				lfm_adapter.notifyDataSetChanged();
+				createContextMenuSingle(lfm_adapter,idx);
+			}
 		}
+    };
+    
+    private void setLogFileItemChecked(LogFileListAdapter lfm_adapter, int pos, boolean checked) {
+    	lfm_adapter.getItem(pos).isChecked=checked;
+    };
+
+    private void setAllLogFileItemChecked(LogFileListAdapter lfm_adapter, boolean checked) {
+    	for(int i=0;i<lfm_adapter.getCount();i++) lfm_adapter.getItem(i).isChecked=checked;
     };
     
     private void createContextMenuSingle(final LogFileListAdapter lfm_adapter, final int pos) {
     	CustomContextMenu ccMenu=new CustomContextMenu(mFragment.getResources(), mFragment.getFragmentManager());
+    	String log_id=lfm_adapter.getItem(pos).log_file_name;
     	
     	if (lfm_adapter.getItem(pos).isCurrentLogFile) {
         	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_archive),android.R.drawable.ic_menu_save)
@@ -338,7 +394,8 @@ public class LogFileListDialogFragment extends DialogFragment{
     			}
         	});
     	}
-    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_browse),R.drawable.browse_text)
+    	ccMenu.addMenuItem(String.format(
+    			mContext.getString(R.string.msgs_log_file_list_menu_browse),log_id),R.drawable.browse_text)
     	.setOnClickListener(new CustomContextMenuOnClickListener(){
 			@Override
 			public void onClick(CharSequence menuTitle) {
@@ -347,7 +404,8 @@ public class LogFileListDialogFragment extends DialogFragment{
 				startActivity(intent);
 			}
     	});
-    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_send),android.R.drawable.ic_menu_share)
+    	ccMenu.addMenuItem(String.format(
+    			mContext.getString(R.string.msgs_log_file_list_menu_send),log_id),android.R.drawable.ic_menu_share)
     	.setOnClickListener(new CustomContextMenuOnClickListener(){
 			@Override
 			public void onClick(CharSequence menuTitle) {
@@ -355,7 +413,8 @@ public class LogFileListDialogFragment extends DialogFragment{
 			}
     	});
     	if (!lfm_adapter.getItem(pos).isCurrentLogFile) {
-        	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_delete),R.drawable.menu_trash)
+        	ccMenu.addMenuItem(String.format(
+        			mContext.getString(R.string.msgs_log_file_list_menu_delete), log_id),R.drawable.menu_trash)
         	.setOnClickListener(new CustomContextMenuOnClickListener(){
     			@Override
     			public void onClick(CharSequence menuTitle) {
@@ -369,14 +428,24 @@ public class LogFileListDialogFragment extends DialogFragment{
     private void createContextMenuMultiple(final LogFileListAdapter lfm_adapter) {
     	CustomContextMenu ccMenu=new CustomContextMenu(mFragment.getResources(), mFragment.getFragmentManager());
     	
-    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_send),android.R.drawable.ic_menu_share)
+    	String log_id="", sep="";
+    	for(int i=0;i<lfm_adapter.getCount();i++) {
+    		if (lfm_adapter.getItem(i).isChecked) {
+    			log_id+=sep+lfm_adapter.getItem(i).log_file_name;
+    			if (log_id.length()>300) break;
+    		}
+    	}
+    	
+    	ccMenu.addMenuItem(String.format(
+    			mContext.getString(R.string.msgs_log_file_list_menu_send),log_id),android.R.drawable.ic_menu_share)
     	.setOnClickListener(new CustomContextMenuOnClickListener(){
 			@Override
 			public void onClick(CharSequence menuTitle) {
 				sendLogFile(lfm_adapter);
 			}
     	});
-    	ccMenu.addMenuItem(mContext.getString(R.string.msgs_log_file_list_menu_delete),R.drawable.menu_trash)
+    	ccMenu.addMenuItem(String.format(
+    			mContext.getString(R.string.msgs_log_file_list_menu_delete),log_id),R.drawable.menu_trash)
     	.setOnClickListener(new CustomContextMenuOnClickListener(){
 			@Override
 			public void onClick(CharSequence menuTitle) {

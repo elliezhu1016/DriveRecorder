@@ -4,16 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    tools:ignore="HardcodedText" >
-
-    <CheckBox
-        style="@style/check_box_style"
-        android:id="@+id/log_file_list_item_checkbox"
-        android:layout_width="40dp"
-        android:layout_height="wrap_content"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:text="" />
+    tools:ignore="HardcodedText,RtlHardcoded" >
     
     <TextView
         android:id="@+id/log_file_list_item_log_name"
@@ -51,11 +42,21 @@
 	        android:id="@+id/log_file_list_item_log_size"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
+	        
 	        android:layout_marginLeft="5dp"
 	        android:layout_gravity="right"
 	        android:text="999999999"
 	        android:textAppearance="?android:attr/textAppearanceMedium" />
         
     </LinearLayout>
+
+    <CheckBox
+        android:id="@+id/log_file_list_item_checkbox"
+        style="@style/check_box_style"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:focusable="false"
+        android:focusableInTouchMode="false" />
 
 </LinearLayout>

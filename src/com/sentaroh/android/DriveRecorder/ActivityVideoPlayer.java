@@ -23,6 +23,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -261,22 +262,55 @@ public class ActivityVideoPlayer extends FragmentActivity{
     	mLog.flushLog();
     };
 
+
+
+	public String getRealPathFromURI(Context context, Uri contentUri) {
+	  Cursor cursor = null;
+	  try { 
+	    String[] proj = { MediaStore.Images.Media.DATA };
+	    cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
+	    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA);
+	    cursor.moveToFirst();
+	    return cursor.getString(column_index);
+	  } finally {
+	    if (cursor != null) {
+	      cursor.close();
+	    }
+	  }
+	};
+
+
+    
 	private void initFileList() {
 		Intent intent=getIntent();
 		String s_fn="";
-//		Log.v("","ext="+intent.getExtras()+", data="+intent.getData());
+//		Log.v("","ext="+intent.getExtras()+", data="+intent.getData().toString());
 		if (intent.getData()!=null) {//Invoked by other application
 			mIsArchiveFolder=true;
-			String fp=intent.getData().getPath().replace("file://", "");
-			String nfn="";
-			if (fp.lastIndexOf("/")>0) {
-				nfn=fp.substring(fp.lastIndexOf("/")+1);
+			if (intent.getData().toString().startsWith("content:")) {
+				String fp=getRealPathFromURI(this,intent.getData());
+				String nfn="";
+				if (fp.lastIndexOf("/")>0) {
+					nfn=fp.substring(fp.lastIndexOf("/")+1);
+				} else {
+					nfn=fp;
+				}
+				String nfd=fp.replace(nfn,"");
+				mVideoFolder=nfd;
+				s_fn=nfn;
+//				Log.v("","fp="+fp+", s_fn="+s_fn);
 			} else {
-				nfn=fp;
+				String fp=intent.getData().getPath().replace("file://", "");
+				String nfn="";
+				if (fp.lastIndexOf("/")>0) {
+					nfn=fp.substring(fp.lastIndexOf("/")+1);
+				} else {
+					nfn=fp;
+				}
+				String nfd=fp.replace(nfn,"");
+				mVideoFolder=nfd;
+				s_fn=nfn;
 			}
-			String nfd=fp.replace(nfn,"");
-			mVideoFolder=nfd;
-			s_fn=nfn;
 		} else {//Invoked by DriveRecorder
 			if (intent.getExtras()!=null && intent.getExtras().containsKey("archive")) {
 				mIsArchiveFolder=getIntent().getBooleanExtra("archive",false);
@@ -913,6 +947,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 
 	private void putPicture(Bitmap bm) {
 		String dir=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()+"/";
+		File l_dir=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+		if (!l_dir.exists()) l_dir.mkdirs();
 		String ftime=DateUtil.convDateTimeTo_YearMonthDayHourMinSec(System.currentTimeMillis())
 				.replaceAll("/","-").replaceAll(":","").replaceAll(" ", "_");
 		String fn="dr_pic_"+ftime+".jpg";
