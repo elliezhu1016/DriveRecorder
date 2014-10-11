@@ -18,5 +18,7 @@ interface IRecorderClient{
 	void aidlStartAutoFocus();
 	boolean aidlIsAutoFocusAvailable();
 	
+	void aidlSwitchCamera(int cameraid);
+	
 	void aidlSetActivityStarted(boolean started);
 }

@@ -2,6 +2,8 @@ package com.sentaroh.android.DriveRecorder;
 
 import java.util.ArrayList;
 
+import com.sentaroh.android.Utilities.NotifyEvent;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.view.LayoutInflater;
@@ -32,6 +34,13 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
 		return items.size();
 	}
 
+	private boolean isShowCheckBox=false;
+	public void setShowCheckBox(boolean p) {isShowCheckBox=p;}
+	public boolean isShowCheckBox() {return isShowCheckBox;}
+
+	private NotifyEvent mNotifyCheckBoxEvent=null;
+	public void setNotifyCheckBoxEventHandler(NotifyEvent ntfy) {mNotifyCheckBoxEvent=ntfy;}
+
 	@Override
 	final public View getView(final int position, View convertView, ViewGroup parent) {
 		ViewHolder holder;
@@ -55,12 +64,15 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
     	if (holder.tv_duration!=null) holder.tv_duration.setText(o.duration);
     	holder.tv_file_size.setText(o.file_size);
     	holder.iv_thumnail.setImageBitmap(o.thumbnail);
-    	
+
+    	if (isShowCheckBox) holder.cb_sel.setVisibility(CheckBox.VISIBLE);
+    	else holder.cb_sel.setVisibility(CheckBox.INVISIBLE);
    		holder.cb_sel.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 			public void onCheckedChanged(CompoundButton buttonView,
 					boolean isChecked) {
 				o.isChecked=isChecked;
 				notifyDataSetChanged();
+				if (mNotifyCheckBoxEvent!=null) mNotifyCheckBoxEvent.notifyToListener(true, null);
 			}
 		});
    		holder.cb_sel.setChecked(o.isChecked);

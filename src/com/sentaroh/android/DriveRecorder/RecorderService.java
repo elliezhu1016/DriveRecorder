@@ -115,6 +115,8 @@ public class RecorderService extends Service {
     	mUiHandler=new Handler();
     	mContext=this;
     	
+    	mGp.numberOfCamera=Camera.getNumberOfCameras();
+    	
     	mGp.screenIsLocked=isKeyguardEffective(mContext);
     	
     	Thread th_thumnail=new Thread() {
@@ -160,7 +162,7 @@ public class RecorderService extends Service {
     
     private void obtainCameraInfo() {
 		try {
-	    	Camera mc=Camera.open(0);
+	    	Camera mc=Camera.open(mGp.usedCameraId);
 			initCameraParms(mc);
 			mc.release();
 			mInitCameraParmCompleted=true;
@@ -449,7 +451,7 @@ public class RecorderService extends Service {
 	
 	private void prepareCamera() {
 		while(!mInitCameraParmCompleted) SystemClock.sleep(100);
-		mServiceCamera=Camera.open(0);
+		mServiceCamera=Camera.open(mGp.usedCameraId);
         Camera.Parameters params = mServiceCamera.getParameters();
         mServiceCamera.setParameters(params);
         Camera.Parameters p = mServiceCamera.getParameters();
@@ -590,13 +592,13 @@ public class RecorderService extends Service {
             CamcorderProfile profile = null;
             int br_ratio=1;
             if (mGp.settingsRecordVideoQuality.equals(RECORD_VIDEO_QUALITY_LOW)) {
-            	profile=CamcorderProfile.get(0,CamcorderProfile.QUALITY_LOW);
+            	profile=CamcorderProfile.get(mGp.usedCameraId,CamcorderProfile.QUALITY_LOW);
             	br_ratio=1;
             } else if (mGp.settingsRecordVideoQuality.equals(RECORD_VIDEO_QUALITY_MEDIUM)) {
-            	profile=CamcorderProfile.get(0,CamcorderProfile.QUALITY_LOW);
+            	profile=CamcorderProfile.get(mGp.usedCameraId,CamcorderProfile.QUALITY_LOW);
             	br_ratio=2;
             } else if (mGp.settingsRecordVideoQuality.equals(RECORD_VIDEO_QUALITY_HIGH)) {
-            	profile=CamcorderProfile.get(0,CamcorderProfile.QUALITY_HIGH);
+            	profile=CamcorderProfile.get(mGp.usedCameraId,CamcorderProfile.QUALITY_HIGH);
             	br_ratio=4;
             }
             mLog.addDebugMsg(1,"I","Profile video frame rate="+profile.videoFrameRate+
@@ -778,6 +780,8 @@ public class RecorderService extends Service {
     
     private void initCameraParms(Camera camera) {
     	
+    	mLog.addDebugMsg(1,"I","Number of camera="+mGp.numberOfCamera);
+    	mLog.addDebugMsg(1,"I","Used camera="+mGp.usedCameraId);
         Camera.Parameters params = camera.getParameters();
         camera.setParameters(params);
         Camera.Parameters p = camera.getParameters();
@@ -949,6 +953,15 @@ public class RecorderService extends Service {
         @Override
         final public void aidlSetActivityStarted(boolean started) throws RemoteException {
         	setActivityStarted(started);
+        };
+
+        @Override
+        final public void aidlSwitchCamera(int cameraid) throws RemoteException {
+        	if (mGp.numberOfCamera>1) {
+        		if (mGp.usedCameraId==0) mGp.usedCameraId=1;
+        		else mGp.usedCameraId=0;
+        		obtainCameraInfo();
+        	}
         };
 
     };

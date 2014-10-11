@@ -5,19 +5,13 @@
     <string name="msgs_main_menu_show_log">ログ表示</string>
     <string name="msgs_main_menu_setting">設定</string>
     <string name="msgs_main_menu_refresh">ファイル読込</string>
+    <string name="msgs_main_menu_change_camera">カメラ変更</string>
     <string name="msgs_main_menu_start_autofocus">ピント合わせ</string>
     
     <string name="msgs_main_autofocus_failed">ピント合わせできませんでした</string>
     
-    <string name="msgs_main_ccmenu_day_delete">%sの録画ファイルを全て削除する</string>
-    <string name="msgs_main_ccmenu_day_delete_day_confirm">%sの録画ファイルを全て削除してよろしいですか？</string>
-    <string name="msgs_main_ccmenu_file_delete">削除</string>
     <string name="msgs_main_ccmenu_file_delete_file_confirm">以下のファイルを削除してよろしいですか？</string>
-    <string name="msgs_main_ccmenu_select_all">全て選択</string>
-    <string name="msgs_main_ccmenu_unselect_all">全ての選択を解除</string>
-    <string name="msgs_main_ccmenu_share">共有</string>
     <string name="msgs_main_ccmenu_share_title">方法の選択</string>
-    <string name="msgs_main_ccmenu_archive">保存</string>
     <string name="msgs_main_ccmenu_file_archive_file_confirm">以下のファイルを保存に移動しますか？</string>
     <string name="msgs_main_ccmenu_file_archive_error">以下のファイルを保存できませんでした。</string>
     

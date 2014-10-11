@@ -46,6 +46,9 @@ public class GlobalParameters extends Application{
 	
 	public boolean screenIsLocked=false;
 	
+	public int usedCameraId=0;
+	public int numberOfCamera=1;
+	
 	public String logFileDir=null;
 //	public String settingsLogTag="BluetoothWidget";
 	@SuppressLint("SdCardPath")

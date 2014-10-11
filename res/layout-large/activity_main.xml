@@ -33,29 +33,9 @@
                 android:layout_weight="2" >
             </ListView>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
 
-            <CheckBox
-                android:id="@+id/main_orientation_portrait"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="縦で録画する"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
-
-            <CheckBox
-                android:id="@+id/main_record_audio"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="音声を録音する"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:visibility="gone" />
-
-        </LinearLayout>
-        
+		<include layout="@layout/context_filelist_view" />
+		        
     </LinearLayout>
     
 </LinearLayout>

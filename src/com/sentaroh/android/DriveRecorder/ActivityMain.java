@@ -10,8 +10,6 @@ import com.sentaroh.android.DriveRecorder.Log.LogFileListDialogFragment;
 import com.sentaroh.android.DriveRecorder.Log.LogUtil;
 import com.sentaroh.android.Utilities.MiscUtil;
 import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.ContextMenu.CustomContextMenu;
-import com.sentaroh.android.Utilities.ContextMenu.CustomContextMenuItem.CustomContextMenuOnClickListener;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.NotifyEvent.NotifyEventListener;
 
@@ -45,20 +43,20 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.View.OnClickListener;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -74,7 +72,6 @@ public class ActivityMain extends FragmentActivity {
     private Handler mUiHandler=null;
     
     private LogUtil mLog=null;
-    private CustomContextMenu mCcMenu=null;
     private CommonDialog mCommonDlg=null;
 
     private LinearLayout mMainUiView=null;
@@ -118,7 +115,16 @@ public class ActivityMain extends FragmentActivity {
 	    mDayListView.setSelectionFromTop(pos_dl_x, ps_dl_y);
 	    mFileListView.setSelectionFromTop(pos_fl_x, ps_fl_y);
 
-        setMainListener();
+        setContextButtonListener();
+        if (isFileListSelected()) {
+        	mFileListAdapter.setShowCheckBox(true);
+        	setContextButtonSelectMode();
+        } else {
+        	mFileListAdapter.setShowCheckBox(false);
+        	setContextButtonNormalMode();
+        }
+        mFileListAdapter.notifyDataSetChanged();
+        
         setDayListListener();
         setFileListListener();
 
@@ -156,7 +162,6 @@ public class ActivityMain extends FragmentActivity {
         
         mLog.addDebugMsg(1, "I","onCreate entered");
         
-        mCcMenu = new CustomContextMenu(getResources(),getSupportFragmentManager());
         mCommonDlg=new CommonDialog(mContext, getSupportFragmentManager());
 
         Intent intent = new Intent(this, RecorderService.class);
@@ -213,12 +218,15 @@ public class ActivityMain extends FragmentActivity {
 								mDayListAdapter.notifyDataSetChanged();
 								mCurrentSelectedDayList=mDayListAdapter.getItem(0).folder_name;
 								createFileList(mCurrentSelectedDayList);
+						        setFileListListener();
+						        setContextButtonNormalMode();
 							}
 			        	}, 100);
+			        } else {
+			        	setContextButtonNormalMode();
 			        }
-			        setMainListener();
+			        setContextButtonListener();
 			        setDayListListener();
-			        setFileListListener();
 				}
 				@Override
 				public void negativeResponse(Context c, Object[] o) {}
@@ -263,6 +271,30 @@ public class ActivityMain extends FragmentActivity {
 		return true;
 	};
 	
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		mLog.addDebugMsg(1,"i","main onKeyDown enterd, kc="+keyCode);
+		switch (keyCode) {
+			case KeyEvent.KEYCODE_BACK:
+				terminateApplication();
+				return true;
+				// break;
+			default:
+				return super.onKeyDown(keyCode, event);
+				// break;
+		}
+	};
+
+	private void terminateApplication() {
+		if (mFileListAdapter!=null && mFileListAdapter.isShowCheckBox()) {
+			mFileListAdapter.setShowCheckBox(false);
+			mFileListAdapter.notifyDataSetChanged();
+			setContextButtonNormalMode();
+			return;
+		}
+		finish();
+	};
+
+	
 	private void setStartStopBtnEnabled(boolean p) {
 		mStartStopBtnEnabled=p;
 	};
@@ -294,6 +326,7 @@ public class ActivityMain extends FragmentActivity {
     		menu.findItem(R.id.menu_top_stop_recorder).setEnabled(false);
     	}
     	if (!isRecording()) {
+    		menu.findItem(R.id.menu_top_change_camera).setVisible(true);
     		menu.findItem(R.id.menu_top_start_recorder).setVisible(true);
     		menu.findItem(R.id.menu_top_stop_recorder).setVisible(false);
     		menu.findItem(R.id.menu_top_show_log).setVisible(true);
@@ -303,6 +336,7 @@ public class ActivityMain extends FragmentActivity {
     		menu.findItem(R.id.menu_top_manage_log).setVisible(true);
     		menu.findItem(R.id.menu_top_start_autofocus).setVisible(false);
     	} else {
+    		menu.findItem(R.id.menu_top_change_camera).setVisible(false);
     		menu.findItem(R.id.menu_top_start_recorder).setVisible(false);
     		menu.findItem(R.id.menu_top_stop_recorder).setVisible(true);
     		menu.findItem(R.id.menu_top_show_log).setVisible(false);
@@ -323,6 +357,14 @@ public class ActivityMain extends FragmentActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		mLog.addDebugMsg(1, "I","onOptionsItemSelected entered");
 		switch (item.getItemId()) {
+			case R.id.menu_top_change_camera:
+		    	try {
+		    		mLog.addDebugMsg(1, "I","Cahnge camera");
+		    		mRecoderClient.aidlSwitchCamera(0);
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+				return true;
 			case R.id.menu_top_start_recorder:
 				setStartStopBtnEnabled(false);
 				setUiEnabled(false);
@@ -351,6 +393,8 @@ public class ActivityMain extends FragmentActivity {
 						mFileListAdapter.notifyDataSetChanged();
 					}
 				}
+				if (mFileListAdapter.isShowCheckBox()) setContextButtonSelectMode();
+				else setContextButtonNormalMode();
 				return true;
 			case R.id.menu_top_show_log:
 				invokeShowLogActivity();
@@ -510,36 +554,6 @@ public class ActivityMain extends FragmentActivity {
 		mFileListView.setSelectionFromTop(pos_fl_x, ps_fl_y);
 	};
 
-    private void setMainListener() {
-    	final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
-    	CheckBox cb_main_portrait=(CheckBox)findViewById(R.id.main_orientation_portrait);
-    	CheckBox cb_main_rec_sound=(CheckBox)findViewById(R.id.main_record_audio);
-    	cb_main_portrait.setChecked(mGp.settingsDeviceOrientationPortrait);
-    	cb_main_portrait.setOnCheckedChangeListener(new OnCheckedChangeListener(){
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView,
-					boolean isChecked) {
-				mGp.settingsDeviceOrientationPortrait=isChecked;
-		        if (mGp.settingsDeviceOrientationPortrait) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-		        else setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-		        
-				prefs.edit().putBoolean(mContext.getString(R.string.settings_device_orientation_portrait),
-						mGp.settingsDeviceOrientationPortrait).commit();
-
-			}
-    	});
-    	cb_main_rec_sound.setChecked(mGp.settingsRecordSound);
-    	cb_main_rec_sound.setOnCheckedChangeListener(new OnCheckedChangeListener(){
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView,
-					boolean isChecked) {
-				mGp.settingsRecordSound=isChecked;
-				prefs.edit().putBoolean(mContext.getString(R.string.settings_record_sound),
-						mGp.settingsRecordSound).commit();
-			}
-    	});
-    };
-    
     private void setDayListListener() {
     	mDayListView.setOnItemClickListener(new OnItemClickListener(){
 			@Override
@@ -555,133 +569,31 @@ public class ActivityMain extends FragmentActivity {
 			}
     	});
     	
-    	mDayListView.setOnItemLongClickListener(new OnItemLongClickListener(){
-			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View view,
-					final int position, long id) {
-				mCcMenu.addMenuItem(String.format(
-					mContext.getString(R.string.msgs_main_ccmenu_day_delete),mDayListAdapter.getItem(position).folder_name),
-					R.drawable.menu_trash)
-			  		.setOnClickListener(new CustomContextMenuOnClickListener() {
-					  @Override
-					  public void onClick(CharSequence menuTitle) {
-						  if (mDayListAdapter.getItem(position).archive_folder) deleteAllArchiveFolderFile(position);
-						  else deleteAllRecordFoloderFile(position);
-					  }
-				});
-				mCcMenu.createMenu();
-				return true;
-			}
-    	});
+//    	mDayListView.setOnItemLongClickListener(new OnItemLongClickListener(){
+//			@Override
+//			public boolean onItemLongClick(AdapterView<?> parent, View view,
+//					final int position, long id) {
+//				mCcMenu.addMenuItem(String.format(
+//					mContext.getString(R.string.msgs_main_ccmenu_day_delete),mDayListAdapter.getItem(position).folder_name),
+//					R.drawable.menu_trash)
+//			  		.setOnClickListener(new CustomContextMenuOnClickListener() {
+//					  @Override
+//					  public void onClick(CharSequence menuTitle) {
+//						  if (mDayListAdapter.getItem(position).archive_folder) deleteAllArchiveFolderFile(position);
+//						  else deleteAllRecordFoloderFile(position);
+//					  }
+//				});
+//				mCcMenu.createMenu();
+//				return true;
+//			}
+//    	});
     };
 
-    private void deleteAllRecordFoloderFile(final int position) {
-		  NotifyEvent ntfy=new NotifyEvent(mContext);
-		  ntfy.setListener(new NotifyEventListener(){
-			@Override
-			public void positiveResponse(Context c, Object[] o) {
-		    	File lf=new File(mGp.videoRecordDir);
-		    	File[] tfl=lf.listFiles();
-		    	if (tfl!=null && tfl.length>0) {
-		    		for (int i=0;i<tfl.length;i++) {
-		        		String dv=getDayValueFromFileName(tfl[i].getName());
-		        		if (mDayListAdapter.getItem(position).folder_name.equals(dv)) {
-		        			mLog.addLogMsg("I", "File was deleted. name="+tfl[i].getName());
-		        			deleteMediaStoreItem(tfl[i].getPath());
-		        			tfl[i].delete();
-		        			mGp.removeThumnailCache(tfl[i].getPath());
-		        		}
-		    		}
-		    	}
-		    	mDayListAdapter.remove(mDayListAdapter.getItem(position));
-//		    	createDayList();
-		        if (mDayListAdapter.getCount()>0) {
-		        	Handler hndl=new Handler();
-		        	hndl.postDelayed(new Runnable(){
-						@Override
-						public void run() {
-							if (getDayFolderList(mCurrentSelectedDayList)==null) {
-								setDayListUnselected();
-								mDayListAdapter.getItem(0).isSelected=true;
-								mCurrentSelectedDayList=mDayListAdapter.getItem(0).folder_name;
-								mDayListAdapter.notifyDataSetChanged();
-					    		createFileList(mDayListAdapter.getItem(0).folder_name);
-							} else {
-								createFileList(mCurrentSelectedDayList);
-							}
-						}
-		        	}, 100);
-		        } else {
-		        	mFileListAdapter.clear();
-		        }
-				mGp.saveThumnailCacheList();
-			}
-			@Override
-			public void negativeResponse(Context c, Object[] o) {}
-		  });
-		  mCommonDlg.showCommonDialog(true, "W", String.format(
-				  mContext.getString(R.string.msgs_main_ccmenu_day_delete_day_confirm),
-				  mDayListAdapter.getItem(position).folder_name), "", ntfy);
-    };
 
     private void setDayListUnselected() {
     	for (int i=0;i<mDayListAdapter.getCount();i++) mDayListAdapter.getItem(i).isSelected=false;
     }
     
-    private DayFolderListItem getDayFolderList(String sel_day) {
-    	DayFolderListItem  dli=null;
-    	if (mDayListAdapter!=null && mDayListAdapter.getCount()>0) {
-    		for (int i=0;i<mDayListAdapter.getCount();i++) {
-    			if (mDayListAdapter.getItem(i).folder_name.equals(sel_day)) {
-    				dli=mDayListAdapter.getItem(i);
-    				break;
-    			}
-    		}
-    	}
-    	return dli;
-    };
-    
-    private void deleteAllArchiveFolderFile(final int position) {
-		  NotifyEvent ntfy=new NotifyEvent(mContext);
-		  ntfy.setListener(new NotifyEventListener(){
-			@Override
-			public void positiveResponse(Context c, Object[] o) {
-		    	File lf=new File(mGp.videoArchiveDir);
-		    	File[] tfl=lf.listFiles();
-		    	if (tfl!=null && tfl.length>0) {
-		    		for (int i=0;i<tfl.length;i++) {
-	        			mLog.addLogMsg("I", "File was deleted. name="+tfl[i].getName());
-	        			deleteMediaStoreItem(tfl[i].getPath());
-	        			tfl[i].delete();
-	        			mGp.removeThumnailCache(tfl[i].getPath());
-		    		}
-		    	}
-		    	mDayListAdapter.remove(mDayListAdapter.getItem(position));
-		    	createDayList();
-		        if (mDayListAdapter.getCount()>0) {
-		        	Handler hndl=new Handler();
-		        	hndl.postDelayed(new Runnable(){
-						@Override
-						public void run() {
-//				    		mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
-							mDayListAdapter.getItem(0).isSelected=true;
-							mDayListAdapter.notifyDataSetChanged();
-				    		createFileList(mDayListAdapter.getItem(0).folder_name);
-						}
-		        	}, 100);
-		        } else {
-		        	mFileListAdapter.clear();
-		        }
-				mGp.saveThumnailCacheList();
-			}
-			@Override
-			public void negativeResponse(Context c, Object[] o) {}
-		  });
-		  mCommonDlg.showCommonDialog(true, "W", String.format(
-				  mContext.getString(R.string.msgs_main_ccmenu_day_delete_day_confirm),
-				  mDayListAdapter.getItem(position).folder_name), "", ntfy);
-    };
-
 	private int deleteMediaStoreItem(String fp) {
 		int dc_image=0, dc_audio=0, dc_video=0, dc_files=0;
 		String mt=isMediaFile(fp);
@@ -728,37 +640,47 @@ public class ActivityMain extends FragmentActivity {
     	mFileListView.setOnItemClickListener(new OnItemClickListener(){
 			@SuppressLint("DefaultLocale")
 			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id) {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				for (int j = 0; j < parent.getChildCount(); j++)
 	                parent.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-//	            view.setBackgroundColor(Color.DKGRAY);
-	            if (isFileListSelected()) {
+				if (mFileListAdapter.isShowCheckBox()) {
 	            	mFileListAdapter.getItem(position).isChecked=!mFileListAdapter.getItem(position).isChecked;
 	            	mFileListAdapter.notifyDataSetChanged();
-	            } else {
+				} else {
 					FileListItem fli=mFileListAdapter.getItem(position);
 					Intent intent;
 					intent = new Intent(mContext,ActivityVideoPlayer.class);
-//					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					intent.putExtra("archive",fli.archive_folder);
 					if (fli.archive_folder) intent.putExtra("fd",mGp.videoArchiveDir);
 					else intent.putExtra("fd",mGp.videoRecordDir);
 					intent.putExtra("fn",fli.file_name);
 					startActivityForResult(intent,1);
-	            }
+				}
 			}
     	});
     	
+    	NotifyEvent ntfy_cb=new NotifyEvent(mContext);
+    	ntfy_cb.setListener(new NotifyEventListener(){
+			@Override
+			public void positiveResponse(Context c, Object[] o) {
+				setContextButtonSelectMode();	
+			}
+			@Override
+			public void negativeResponse(Context c, Object[] o) {}
+    	});
+    	mFileListAdapter.setNotifyCheckBoxEventHandler(ntfy_cb);
+    	
     	mFileListView.setOnItemLongClickListener(new OnItemLongClickListener(){
 			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View view,
-					final int position, long id) {
-				if (isFileListSelected()) createFileListContextMenuBySel();
-				else createFileListContextMenuByPos(position);
+			public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+				mFileListAdapter.setShowCheckBox(true);
+				mFileListAdapter.getItem(position).isChecked=true;
+				mFileListAdapter.notifyDataSetChanged();
+				setContextButtonSelectMode();
 				return true;
 			}
     	});
+    	
     };
     
     private boolean isFileListSelected() {
@@ -772,133 +694,355 @@ public class ActivityMain extends FragmentActivity {
     	return result;
     };
 
-    private void createFileListContextMenuByPos(final int pos) {
-		final String cfn=mFileListAdapter.getItem(pos).file_name;
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_file_delete)+
-				" "+cfn,R.drawable.menu_trash)
-	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
-			  @Override
-			  public void onClick(CharSequence menuTitle) {
-				  String fn=mFileListAdapter.getItem(pos).file_name;
-				  
-				  NotifyEvent ntfy=new NotifyEvent(mContext);
-				  ntfy.setListener(new NotifyEventListener(){
-					@Override
-					public void positiveResponse(Context c, Object[] o) {
-						String fp="";
-						if (mFileListAdapter.getItem(pos).archive_folder) fp=mGp.videoArchiveDir+mFileListAdapter.getItem(pos).file_name;
-						else fp=mGp.videoRecordDir+mFileListAdapter.getItem(pos).file_name;
-				    	File lf=new File(fp);
-	        			mLog.addLogMsg("I", "File was deleted. name="+mFileListAdapter.getItem(pos).file_name);
-				        deleteMediaStoreItem(fp);
-				        lf.delete();
-				    	mFileListAdapter.remove(mFileListAdapter.getItem(pos));
-				    	if (mFileListAdapter.getCount()==0) {
-				    		createDayList();
-					        if (mDayListAdapter.getCount()>0) {
-					        	Handler hndl=new Handler();
-					        	hndl.postDelayed(new Runnable(){
-									@Override
-									public void run() {
-							    		createFileList(mDayListAdapter.getItem(0).folder_name);
-									}
-					        	}, 100);
-					        }
-				    	} 
-						mGp.removeThumnailCache(fp);
-						mGp.saveThumnailCacheList();
-					}
-					@Override
-					public void negativeResponse(Context c, Object[] o) {
-					}
-				  });
-				  mCommonDlg.showCommonDialog(true, "W", 
-						  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
-		  	  }
-		});
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_share), android.R.drawable.ic_menu_share)
-		.setOnClickListener(new CustomContextMenuOnClickListener() {
-			@Override
-			public void onClick(CharSequence menuTitle) {
-			    Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-			    Uri uri = null;
-			    if (mFileListAdapter.getItem(pos).archive_folder) uri=Uri.parse(mGp.videoArchiveDir+mFileListAdapter.getItem(pos).file_name);
-			    else uri=Uri.parse(mGp.videoRecordDir+mFileListAdapter.getItem(pos).file_name);
-			     
-			    sharingIntent.setType("video/mp4");
-			    sharingIntent.putExtra(Intent.EXTRA_STREAM, uri);
-			    startActivity(Intent.createChooser(sharingIntent,
-			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
-			}
-		});
-		if (!mFileListAdapter.getItem(pos).archive_folder) {
-			mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_archive)+" "+cfn)
-			.setOnClickListener(new CustomContextMenuOnClickListener() {
-				@Override
-				public void onClick(CharSequence menuTitle) {
-					NotifyEvent ntfy=new NotifyEvent(mContext);
-					ntfy.setListener(new NotifyEventListener(){
-						@Override
-						public void positiveResponse(Context c, Object[] o) {
-							String fp=mGp.videoRecordDir+mFileListAdapter.getItem(pos).file_name;
-							String afp=mGp.videoArchiveDir+mFileListAdapter.getItem(pos).file_name;
-							File tlf=new File(mGp.videoArchiveDir);
-							if (!tlf.exists()) tlf.mkdirs();
-							
-					    	File lf=new File(fp);
-					    	boolean result=lf.renameTo(new File(afp));
-					    	if (result) {
-					    		mGp.removeThumnailCache(fp);
-					    		mGp.addThumnailCache(afp);
-					    		
-					    		mLog.addLogMsg("I", "File was archived. name="+mFileListAdapter.getItem(pos).file_name);
-						        deleteMediaStoreItem(fp);
-						    	mFileListAdapter.remove(mFileListAdapter.getItem(pos));
-						    	scanMediaStoreFile(afp);
-					    		createDayList();
-						        if (mDayListAdapter.getCount()>0) {
-						        	Handler hndl=new Handler();
-						        	hndl.postDelayed(new Runnable(){
-										@Override
-										public void run() {
-								    		createFileList(mDayListAdapter.getItem(0).folder_name);
-										}
-						        	}, 100);
-						        }
-					    	} else {
-					    		mLog.addLogMsg("E", "File can not archived. name="+mFileListAdapter.getItem(pos).file_name);
-								mCommonDlg.showCommonDialog(false, "E", 
-										  mContext.getString(R.string.msgs_main_ccmenu_file_archive_error), cfn, null);
-					    	}
-							mGp.saveThumnailCacheList();
-						}
-						@Override
-						public void negativeResponse(Context c, Object[] o) {
-						}
-					});
-					mCommonDlg.showCommonDialog(true, "W", 
-							  mContext.getString(R.string.msgs_main_ccmenu_file_archive_file_confirm), cfn, ntfy);
-				}
-			});
-		}
-
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_select_all))
-	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
-	  		@Override
-	  		public void onClick(CharSequence menuTitle) {
-	  			selectAllFileListItem();
-			}
-		});
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_unselect_all))
-  			.setOnClickListener(new CustomContextMenuOnClickListener() {
-			@Override
-			public void onClick(CharSequence menuTitle) {
-				unselectAllFileListItem();
-			}
-  		});
-		mCcMenu.createMenu();
+    @SuppressWarnings("unused")
+	private int getFileListSelectedCount() {
+    	int result=0;
+    	for (int i=0;i<mFileListAdapter.getCount();i++) {
+    		if (mFileListAdapter.getItem(i).isChecked) {
+    			result++;
+    		}
+    	}
+    	return result;
     };
 
+	private void setContextButtonListener() {
+		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
+        final ImageButton ib_delete=(ImageButton)ll_prof.findViewById(R.id.context_button_delete);
+        final ImageButton ib_orientation=(ImageButton)ll_prof.findViewById(R.id.context_button_orientation);
+        final ImageButton ib_share=(ImageButton)ll_prof.findViewById(R.id.context_button_share);
+        final ImageButton ib_archive=(ImageButton)ll_prof.findViewById(R.id.context_button_archive);
+        final ImageButton ib_select_all=(ImageButton)ll_prof.findViewById(R.id.context_button_select_all);
+        final ImageButton ib_unselect_all=(ImageButton)ll_prof.findViewById(R.id.context_button_unselect_all);
+        
+        ib_delete.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				deleteConfirm();
+			}
+        });
+    	final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+		if (mGp.settingsDeviceOrientationPortrait) ib_orientation.setImageResource(R.drawable.orientation_landscape);
+		else ib_orientation.setImageResource(R.drawable.orientation_portrait);
+        ib_orientation.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				mGp.settingsDeviceOrientationPortrait=!mGp.settingsDeviceOrientationPortrait;
+		        if (mGp.settingsDeviceOrientationPortrait) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		        else setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		        
+				prefs.edit().putBoolean(mContext.getString(R.string.settings_device_orientation_portrait),
+						mGp.settingsDeviceOrientationPortrait).commit();
+				if (mGp.settingsDeviceOrientationPortrait) ib_orientation.setImageResource(R.drawable.orientation_landscape);
+				else ib_orientation.setImageResource(R.drawable.orientation_portrait);
+			}
+        });
+        ib_share.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+			    Intent intent = new Intent();
+			    intent.setAction(Intent.ACTION_SEND_MULTIPLE);
+			    intent.putExtra(Intent.EXTRA_SUBJECT, "Add any subject");
+			    intent.setType("video/mp4");
+
+			    ArrayList<Uri> files = new ArrayList<Uri>();
+				for (int i=0;i<mFileListAdapter.getCount();i++) {
+					if (mFileListAdapter.getItem(i).isChecked) {
+						Uri uri=null;
+						if (mFileListAdapter.getItem(i).archive_folder) uri=Uri.parse(mGp.videoArchiveDir+mFileListAdapter.getItem(i).file_name);
+						else uri=Uri.parse(mGp.videoRecordDir+mFileListAdapter.getItem(i).file_name);
+					    files.add(uri);
+					}
+				}
+
+			    intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files); 
+			    startActivity(Intent.createChooser(intent,
+			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
+			    
+				mFileListAdapter.setShowCheckBox(false);
+				mFileListAdapter.notifyDataSetChanged();
+				setContextButtonNormalMode();
+			}
+        });
+        ib_archive.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				archiveRecordedVideo();
+			}
+        });
+
+        ib_select_all.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				mFileListAdapter.setShowCheckBox(true);
+				selectAllFileListItem();
+				setContextButtonSelectMode();
+			}
+        });
+        ib_unselect_all.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				unselectAllFileListItem();
+				setContextButtonSelectMode();
+			}
+        });
+
+	};
+
+	private void deleteConfirm() {
+		if (isFileListSelected()) {
+			  String fn="", sep="";
+			  for (int i=0;i<mFileListAdapter.getCount();i++) {
+				  if (mFileListAdapter.getItem(i).isChecked) {
+					  fn+=sep+mFileListAdapter.getItem(i).file_name;
+					  sep="\n";
+				  }
+			  }
+			  NotifyEvent ntfy=new NotifyEvent(mContext);
+			  ntfy.setListener(new NotifyEventListener(){
+				@Override
+				public void positiveResponse(Context c, Object[] o) {
+					for (int i=mFileListAdapter.getCount()-1;i>=0;i--) {
+						if (mFileListAdapter.getItem(i).isChecked) {
+							String fp="";
+							if (mFileListAdapter.getItem(i).archive_folder) {
+								fp=mGp.videoArchiveDir+mFileListAdapter.getItem(i).file_name;
+							} else {
+								fp=mGp.videoRecordDir+mFileListAdapter.getItem(i).file_name;
+							}
+					    	File lf=new File(fp);
+		        			mLog.addLogMsg("I", "File was deleted. name="+fp);
+					        deleteMediaStoreItem(fp);
+					        lf.delete();
+					    	mFileListAdapter.remove(mFileListAdapter.getItem(i));
+						}
+					}
+					if (mGp.housekeepThumnailCache()) mGp.saveThumnailCacheList();
+			    	if (mFileListAdapter.getCount()==0) {
+			    		createDayList();
+				        if (mDayListAdapter.getCount()>0) {
+				        	Handler hndl=new Handler();
+				        	hndl.postDelayed(new Runnable(){
+								@Override
+								public void run() {
+						    		createFileList(mDayListAdapter.getItem(0).folder_name);
+								}
+				        	}, 100);
+				        }
+			    	} 
+					mFileListAdapter.setShowCheckBox(false);
+					mFileListAdapter.notifyDataSetChanged();
+					setContextButtonNormalMode();
+				}
+				@Override
+				public void negativeResponse(Context c, Object[] o) {
+				}
+			  });
+			  mCommonDlg.showCommonDialog(true, "W", 
+					  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
+//		} else {
+//			if (mDayListAdapter.getItem(mCurrentSelectedListViewPos).archive_folder) {
+//				deleteAllArchiveFolderFile(mCurrentSelectedListViewPos);
+//			} else {
+//				deleteAllRecordFoloderFile(mCurrentSelectedListViewPos);
+//			}
+		}
+	}
+	
+	private void archiveRecordedVideo() {
+		String arch_list="", sep="";
+		final ArrayList<FileListItem> al=new ArrayList<FileListItem>();
+		for(int i=0;i<mFileListAdapter.getCount();i++) {
+			if (mFileListAdapter.getItem(i).isChecked) {
+				arch_list+=sep+mFileListAdapter.getItem(i).file_name;
+				sep=",";
+				al.add(mFileListAdapter.getItem(i));
+			}
+		}
+		NotifyEvent ntfy=new NotifyEvent(mContext);
+		ntfy.setListener(new NotifyEventListener(){
+			@Override
+			public void positiveResponse(Context c, Object[] o) {
+				for(int i=0;i<al.size();i++) {
+					boolean result=moveFileToArchive(al.get(i));
+					if (!result) {
+						break;
+					} else {
+			    		createDayList();
+				        if (mDayListAdapter.getCount()>0) {
+				    		createFileList(mDayListAdapter.getItem(0).folder_name);
+//				        	Handler hndl=new Handler();
+//				        	hndl.postDelayed(new Runnable(){
+//								@Override
+//								public void run() {
+//								}
+//				        	}, 100);
+				        }
+						mGp.saveThumnailCacheList();
+					}
+				}
+	        	Handler hndl=new Handler();
+	        	hndl.postDelayed(new Runnable(){
+					@Override
+					public void run() {
+						mFileListAdapter.setShowCheckBox(false);
+						mFileListAdapter.notifyDataSetChanged();
+						setContextButtonNormalMode();
+					}
+	        	}, 100);
+			}
+			@Override
+			public void negativeResponse(Context c, Object[] o) {
+			}
+		});
+		mCommonDlg.showCommonDialog(true, "W", 
+				  mContext.getString(R.string.msgs_main_ccmenu_file_archive_file_confirm), arch_list, ntfy);
+	};
+
+	private boolean moveFileToArchive(FileListItem fli) {
+		String fp=mGp.videoRecordDir+fli.file_name;
+		String afp=mGp.videoArchiveDir+fli.file_name;
+		File tlf=new File(mGp.videoArchiveDir);
+		if (!tlf.exists()) tlf.mkdirs();
+		
+    	File lf=new File(fp);
+    	boolean result=lf.renameTo(new File(afp));
+    	if (result) {
+    		mGp.removeThumnailCache(fp);
+    		mGp.addThumnailCache(afp);
+    		
+    		mLog.addLogMsg("I", "File was archived. name="+fli.file_name);
+	        deleteMediaStoreItem(fp);
+	    	mFileListAdapter.remove(fli);
+	    	scanMediaStoreFile(afp);
+    	} else {
+    		mLog.addLogMsg("E", "File can not archived. name="+fli.file_name);
+			mCommonDlg.showCommonDialog(false, "E", 
+					  mContext.getString(R.string.msgs_main_ccmenu_file_archive_error), fli.file_name, null);
+    	}
+    	return result;
+	};
+	
+	private void setContextButtonSelectMode() {
+		Thread.dumpStack();
+		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
+        LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.context_button_delete_view);
+        LinearLayout ll_orientation=(LinearLayout)ll_prof.findViewById(R.id.context_button_orientation_view);
+        LinearLayout ll_share=(LinearLayout)ll_prof.findViewById(R.id.context_button_share_view);
+        LinearLayout ll_archive=(LinearLayout)ll_prof.findViewById(R.id.context_button_archive_view);
+        LinearLayout ll_select_all=(LinearLayout)ll_prof.findViewById(R.id.context_button_select_all_view);
+        LinearLayout ll_unselect_all=(LinearLayout)ll_prof.findViewById(R.id.context_button_unselect_all_view);
+
+        boolean sel=isFileListSelected();
+        
+        if (sel) ll_delete.setVisibility(LinearLayout.VISIBLE);
+        else ll_delete.setVisibility(LinearLayout.GONE);
+        
+        ll_orientation.setVisibility(LinearLayout.VISIBLE);
+        
+        if (sel) ll_share.setVisibility(LinearLayout.VISIBLE);
+        else ll_share.setVisibility(LinearLayout.GONE);
+        
+        if (sel) ll_archive.setVisibility(LinearLayout.VISIBLE);
+        else ll_archive.setVisibility(LinearLayout.GONE);
+        
+        ll_select_all.setVisibility(LinearLayout.VISIBLE);
+
+        if (sel) ll_unselect_all.setVisibility(LinearLayout.VISIBLE);
+        else ll_unselect_all.setVisibility(LinearLayout.GONE);
+	};
+
+	private void setContextButtonNormalMode() {
+		Thread.dumpStack();
+		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
+        LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.context_button_delete_view);
+        LinearLayout ll_orientation=(LinearLayout)ll_prof.findViewById(R.id.context_button_orientation_view);
+        LinearLayout ll_share=(LinearLayout)ll_prof.findViewById(R.id.context_button_share_view);
+        LinearLayout ll_archive=(LinearLayout)ll_prof.findViewById(R.id.context_button_archive_view);
+        LinearLayout ll_select_all=(LinearLayout)ll_prof.findViewById(R.id.context_button_select_all_view);
+        LinearLayout ll_unselect_all=(LinearLayout)ll_prof.findViewById(R.id.context_button_unselect_all_view);
+
+        ll_delete.setVisibility(LinearLayout.GONE);
+        ll_orientation.setVisibility(LinearLayout.VISIBLE);
+        ll_share.setVisibility(LinearLayout.GONE);
+        ll_archive.setVisibility(LinearLayout.GONE);
+        if (mFileListAdapter!=null && mFileListAdapter.getCount()>0) ll_select_all.setVisibility(LinearLayout.VISIBLE);
+        else ll_select_all.setVisibility(LinearLayout.GONE);
+        ll_unselect_all.setVisibility(LinearLayout.GONE);
+	};
+
+//    private void sendFile(final LogFileListAdapter lfm_adapter) {
+//		final String zip_file_name=mGlblParms.settingsLogFileDir+"log.zip";
+//		
+//		int no_of_files=0;
+//		for (int i=0;i<lfm_adapter.getCount();i++) {
+//			if (lfm_adapter.getItem(i).isChecked) no_of_files++;
+//		}
+//		final String[] file_name=new String[no_of_files];
+//		int files_pos=0;
+//		for (int i=0;i<lfm_adapter.getCount();i++) {
+//			if (lfm_adapter.getItem(i).isChecked) {
+//				file_name[files_pos]=lfm_adapter.getItem(i).log_file_path;
+//				files_pos++;
+//			}
+//		}
+//		final ThreadCtrl tc=new ThreadCtrl();
+//		NotifyEvent ntfy=new NotifyEvent(mContext);
+//		ntfy.setListener(new NotifyEventListener(){
+//			@Override
+//			public void positiveResponse(Context c, Object[] o) {
+//			}
+//			@Override
+//			public void negativeResponse(Context c, Object[] o) {
+//				tc.setDisabled();
+//			}
+//		});
+//
+//		final ProgressBarDialogFragment pbdf=ProgressBarDialogFragment.newInstance(
+//				mContext.getString(R.string.msgs_log_file_list_dlg_send_zip_file_creating), 
+//				"",
+//				mContext.getString(R.string.msgs_common_dialog_cancel),
+//				mContext.getString(R.string.msgs_common_dialog_cancel));
+//		pbdf.showDialog(getFragmentManager(), pbdf, ntfy,true);
+//		Thread th=new Thread() {
+//			@Override
+//			public void run() {
+//				File lf=new File(zip_file_name);
+//				lf.delete();
+//				MiscUtil.createZipFile(tc,pbdf,zip_file_name,file_name);
+//				if (tc.isEnabled()) {
+//				    Intent intent=new Intent();
+//				    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//				    intent.setAction(Intent.ACTION_SEND);  
+////				    intent.setType("message/rfc822");  
+////				    intent.setType("text/plain");
+//				    intent.setType("application/zip");
+//				    intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(lf)); 
+//				    mFragment.getActivity().startActivity(intent);
+//
+//				    mUiHandler.post(new Runnable(){
+//						@Override
+//						public void run() {
+//							lfm_adapter.setAllItemChecked(false);
+//							lfm_adapter.setShowCheckBox(false);
+//							lfm_adapter.notifyDataSetChanged();
+//							setContextButtonNormalMode(lfm_adapter);
+//						}
+//				    });
+//				} else {
+//					lf.delete();
+//
+//					MessageDialogFragment mdf =MessageDialogFragment.newInstance(false, "W",
+//							mContext.getString(R.string.msgs_log_file_list_dlg_send_zip_file_cancelled),
+//			        		"");
+//			        mdf.showDialog(mFragment.getFragmentManager(), mdf, null);
+//
+//				}
+//				pbdf.dismiss();
+//			};
+//		};
+//		th.start();
+//    };
+    
     private void scanMediaStoreFile(String fp) {
     	String[] paths = new String[] {fp};
     	MediaScannerConnection.scanFile(getApplicationContext(), paths, null, mOnScanCompletedListener);
@@ -922,111 +1066,6 @@ public class ActivityMain extends FragmentActivity {
     	mFileListAdapter.notifyDataSetChanged();
     };
 
-    private void createFileListContextMenuBySel() {
-		String cfn="", csep="";
-		boolean t_archive_folder=false;
-		for (int i=0;i<mFileListAdapter.getCount();i++) {
-			if (mFileListAdapter.getItem(i).isChecked) {
-				cfn+=csep+mFileListAdapter.getItem(i).file_name;
-				csep=", ";
-				t_archive_folder=mFileListAdapter.getItem(i).archive_folder;
-			}
-		}
-		final boolean archive_folder=t_archive_folder;
-		
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_file_delete)+
-				" "+cfn,R.drawable.menu_trash)
-	  		.setOnClickListener(new CustomContextMenuOnClickListener() {
-			  @Override
-			  public void onClick(CharSequence menuTitle) {
-				  String fn="", sep="";
-				  for (int i=0;i<mFileListAdapter.getCount();i++) {
-					  if (mFileListAdapter.getItem(i).isChecked) {
-						  fn+=sep+mFileListAdapter.getItem(i).file_name;
-						  sep="\n";
-					  }
-				  }
-				  NotifyEvent ntfy=new NotifyEvent(mContext);
-				  ntfy.setListener(new NotifyEventListener(){
-					@Override
-					public void positiveResponse(Context c, Object[] o) {
-						for (int i=mFileListAdapter.getCount()-1;i>=0;i--) {
-							if (mFileListAdapter.getItem(i).isChecked) {
-								String fp="";
-								if (archive_folder) fp=mGp.videoRecordDir+mFileListAdapter.getItem(i).file_name;
-								else fp=mGp.videoRecordDir+mFileListAdapter.getItem(i).file_name;
-						    	File lf=new File(fp);
-			        			mLog.addLogMsg("I", "File was deleted. name="+mFileListAdapter.getItem(i).file_name);
-						        deleteMediaStoreItem(fp);
-						        lf.delete();
-						    	mFileListAdapter.remove(mFileListAdapter.getItem(i));
-							}
-						}
-						if (mGp.housekeepThumnailCache()) mGp.saveThumnailCacheList();
-				    	if (mFileListAdapter.getCount()==0) {
-				    		createDayList();
-					        if (mDayListAdapter.getCount()>0) {
-					        	Handler hndl=new Handler();
-					        	hndl.postDelayed(new Runnable(){
-									@Override
-									public void run() {
-							    		createFileList(mDayListAdapter.getItem(0).folder_name);
-									}
-					        	}, 100);
-					        }
-				    	} 
-					}
-					@Override
-					public void negativeResponse(Context c, Object[] o) {
-					}
-				  });
-				  mCommonDlg.showCommonDialog(true, "W", 
-						  mContext.getString(R.string.msgs_main_ccmenu_file_delete_file_confirm), fn, ntfy);
-			  	}
-		});
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_share), android.R.drawable.ic_menu_share)
-		.setOnClickListener(new CustomContextMenuOnClickListener() {
-			@Override
-			public void onClick(CharSequence menuTitle) {
-			    Intent intent = new Intent();
-			    intent.setAction(Intent.ACTION_SEND_MULTIPLE);
-			    intent.putExtra(Intent.EXTRA_SUBJECT, "Add any subject");
-			    intent.setType("video/mp4");
-
-			    ArrayList<Uri> files = new ArrayList<Uri>();
-				for (int i=0;i<mFileListAdapter.getCount();i++) {
-					if (mFileListAdapter.getItem(i).isChecked) {
-						Uri uri=null;
-						if (mFileListAdapter.getItem(i).archive_folder) uri=Uri.parse(mGp.videoArchiveDir+mFileListAdapter.getItem(i).file_name);
-						else uri=Uri.parse(mGp.videoRecordDir+mFileListAdapter.getItem(i).file_name);
-					    files.add(uri);
-					}
-				}
-
-			    intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files); 
-			    startActivity(Intent.createChooser(intent,
-			    		mContext.getString(R.string.msgs_main_ccmenu_share_title)));
-			}
-		});
-		
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_select_all))
-  			.setOnClickListener(new CustomContextMenuOnClickListener() {
-	  		@Override
-	  		public void onClick(CharSequence menuTitle) {
-	  			selectAllFileListItem();
-			}
-  		});
-		mCcMenu.addMenuItem(mContext.getString(R.string.msgs_main_ccmenu_unselect_all))
-			.setOnClickListener(new CustomContextMenuOnClickListener() {
-			@Override
-			public void onClick(CharSequence menuTitle) {
-				unselectAllFileListItem();
-			}
-		});
-		
-		mCcMenu.createMenu();
-    };
-    
     private void createDayList() {
     	mLog.addDebugMsg(1, "I","createDayList entered");
 //		String c_sel="";
@@ -1338,12 +1377,15 @@ public class ActivityMain extends FragmentActivity {
 					    				break;
 					    			}
 					    		}
+						        if (mFileListAdapter!=null && mFileListAdapter.isShowCheckBox()) setContextButtonSelectMode();
+						        else setContextButtonNormalMode();
 							}
 			        	}, 100);
 			        } else {
 			        	if (mFileListAdapter!=null) mFileListAdapter.clear();
 			        }
-
+			        if (mFileListAdapter!=null && mFileListAdapter.isShowCheckBox()) setContextButtonSelectMode();
+			        else setContextButtonNormalMode();
 				}
 			},500);
 		};
