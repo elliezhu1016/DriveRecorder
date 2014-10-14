@@ -42,7 +42,8 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
-import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -61,7 +62,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class ActivityMain extends FragmentActivity {
+public class ActivityMain extends ActionBarActivity {
     public Activity mActivity=null;
     
     private int mRestartStatus=0;
@@ -99,6 +100,10 @@ public class ActivityMain extends FragmentActivity {
 	    super.onConfigurationChanged(newConfig);
 	    mLog.addDebugMsg(1,"I","onConfigurationChanged Entered, orientation="+newConfig.orientation);
 	    
+    	processConfigChanged();
+	};
+
+	private void processConfigChanged() {
 	    int ps_dl_y=0;
 	    int pos_dl_x=mDayListView.getFirstVisiblePosition();
 		if (mDayListView.getChildAt(0)!=null) ps_dl_y=mDayListView.getChildAt(0).getTop();
@@ -116,20 +121,19 @@ public class ActivityMain extends FragmentActivity {
 	    mFileListView.setSelectionFromTop(pos_fl_x, ps_fl_y);
 
         setContextButtonListener();
-        if (isFileListSelected()) {
-        	mFileListAdapter.setShowCheckBox(true);
-        	setContextButtonSelectMode();
-        } else {
-        	mFileListAdapter.setShowCheckBox(false);
-        	setContextButtonNormalMode();
+        if (mFileListAdapter!=null) {
+            if (mFileListAdapter.isShowCheckBox()) {
+            	setContextButtonSelectMode();
+            } else {
+            	setContextButtonNormalMode();
+            }
+            mFileListAdapter.notifyDataSetChanged();
         }
-        mFileListAdapter.notifyDataSetChanged();
         
         setDayListListener();
         setFileListListener();
-
-	};
-
+	}
+	
 	private void initView() {
 		mLog.addDebugMsg(1,"I","initView Entered");
 		setContentView(R.layout.activity_main);
@@ -163,6 +167,9 @@ public class ActivityMain extends FragmentActivity {
         mLog.addDebugMsg(1, "I","onCreate entered");
         
         mCommonDlg=new CommonDialog(mContext, getSupportFragmentManager());
+        
+        mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, new ArrayList<FileListItem>());
+        setFileListCheckBoxHandler(mFileListAdapter);
 
         Intent intent = new Intent(this, RecorderService.class);
         startService(intent);
@@ -170,7 +177,7 @@ public class ActivityMain extends FragmentActivity {
         initView();
         
     };
-    
+
     @Override
     public void onResume() {
     	super.onResume();
@@ -204,34 +211,24 @@ public class ActivityMain extends FragmentActivity {
 	            		setUiEnabled(true);
 	            	};
 			        mRestartStatus=1;
-
-			        createDayList();
-			        if (mDayListAdapter.getCount()>0) {
-			        	Handler hndl=new Handler();
-			        	hndl.postDelayed(new Runnable(){
-							@Override
-							public void run() {
-//								Log.v("","lv="+mDayListView+", ch="+mDayListView.getChildAt(0));
-//					    		if (mDayListView.getChildAt(0)!=null) 
-//					    			mDayListView.getChildAt(0).setBackgroundColor(Color.DKGRAY);
-								mDayListAdapter.getItem(0).isSelected=true;
-								mDayListAdapter.notifyDataSetChanged();
-								mCurrentSelectedDayList=mDayListAdapter.getItem(0).folder_name;
-								createFileList(mCurrentSelectedDayList);
-						        setFileListListener();
-						        setContextButtonNormalMode();
-							}
-			        	}, 100);
-			        } else {
-			        	setContextButtonNormalMode();
-			        }
-			        setContextButtonListener();
-			        setDayListListener();
 				}
 				@Override
 				public void negativeResponse(Context c, Object[] o) {}
     		});
     		openService(ntfy);
+	        createDayList();
+	        if (mDayListAdapter.getCount()>0) {
+				mDayListAdapter.getItem(0).isSelected=true;
+				mDayListAdapter.notifyDataSetChanged();
+				mCurrentSelectedDayList=mDayListAdapter.getItem(0).folder_name;
+				createFileList(mCurrentSelectedDayList);
+		        setFileListListener();
+		        setContextButtonNormalMode();
+	        } else {
+	        	setContextButtonNormalMode();
+	        }
+	        setContextButtonListener();
+	        setDayListListener();
     	}
     };
     
@@ -355,8 +352,11 @@ public class ActivityMain extends FragmentActivity {
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		mLog.addDebugMsg(1, "I","onOptionsItemSelected entered");
+		mLog.addDebugMsg(1, "I","onOptionsItemSelected entered, id="+item.getItemId());
 		switch (item.getItemId()) {
+			case android.R.id.home:
+				processHomeButtonPress();
+				return true;
 			case R.id.menu_top_change_camera:
 		    	try {
 		    		mLog.addDebugMsg(1, "I","Cahnge camera");
@@ -423,6 +423,14 @@ public class ActivityMain extends FragmentActivity {
 		return false;
 	};
 	
+	private void processHomeButtonPress() {
+		if (mFileListAdapter.isShowCheckBox()) {
+			mFileListAdapter.setShowCheckBox(false);
+			mFileListAdapter.notifyDataSetChanged();
+			setContextButtonNormalMode();
+		}
+	};
+
 	private void about() {
 		// common カスタムダイアログの生成
 		final Dialog dialog = new Dialog(this);
@@ -635,6 +643,19 @@ public class ActivityMain extends FragmentActivity {
 		if (mt==null) return "";
 		else return mt;
 	};
+	
+	private void setFileListCheckBoxHandler(AdapterFileList fa) {
+    	NotifyEvent ntfy_cb=new NotifyEvent(mContext);
+    	ntfy_cb.setListener(new NotifyEventListener(){
+			@Override
+			public void positiveResponse(Context c, Object[] o) {
+				setContextButtonSelectMode();	
+			}
+			@Override
+			public void negativeResponse(Context c, Object[] o) {}
+    	});
+    	fa.setNotifyCheckBoxEventHandler(ntfy_cb);
+	}
 
     private void setFileListListener() {
     	mFileListView.setOnItemClickListener(new OnItemClickListener(){
@@ -659,24 +680,49 @@ public class ActivityMain extends FragmentActivity {
 			}
     	});
     	
-    	NotifyEvent ntfy_cb=new NotifyEvent(mContext);
-    	ntfy_cb.setListener(new NotifyEventListener(){
-			@Override
-			public void positiveResponse(Context c, Object[] o) {
-				setContextButtonSelectMode();	
-			}
-			@Override
-			public void negativeResponse(Context c, Object[] o) {}
-    	});
-    	mFileListAdapter.setNotifyCheckBoxEventHandler(ntfy_cb);
-    	
     	mFileListView.setOnItemLongClickListener(new OnItemLongClickListener(){
 			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-				mFileListAdapter.setShowCheckBox(true);
-				mFileListAdapter.getItem(position).isChecked=true;
-				mFileListAdapter.notifyDataSetChanged();
-				setContextButtonSelectMode();
+			public boolean onItemLongClick(AdapterView<?> parent, View view, final int pos, long id) {
+				if (mFileListAdapter.getCount()==0) return true;
+				if (!mFileListAdapter.getItem(pos).isChecked) {
+					if (isFileListSelected()) {
+						int down_sel_pos=-1, up_sel_pos=-1;
+						int tot_cnt=mFileListAdapter.getCount();
+						if (pos+1<=tot_cnt) {
+							for(int i=pos+1;i<tot_cnt;i++) {
+								if (mFileListAdapter.getItem(i).isChecked) {
+									up_sel_pos=i;
+									break;
+								}
+							}
+						}
+						if (pos>0) {
+							for(int i=pos;i>=0;i--) {
+								if (mFileListAdapter.getItem(i).isChecked) {
+									down_sel_pos=i;
+									break;
+								}
+							}
+						}
+//						Log.v("","up="+up_sel_pos+", down="+down_sel_pos);
+						if (up_sel_pos!=-1 && down_sel_pos==-1) {
+							for (int i=pos;i<up_sel_pos;i++) 
+								mFileListAdapter.getItem(i).isChecked=true;
+						} else if (up_sel_pos!=-1 && down_sel_pos!=-1) {
+							for (int i=down_sel_pos+1;i<up_sel_pos;i++) 
+								mFileListAdapter.getItem(i).isChecked=true;
+						} else if (up_sel_pos==-1 && down_sel_pos!=-1) {
+							for (int i=down_sel_pos+1;i<=pos;i++) 
+								mFileListAdapter.getItem(i).isChecked=true;
+						}
+						mFileListAdapter.notifyDataSetChanged();
+					} else {
+						mFileListAdapter.setShowCheckBox(true);
+						mFileListAdapter.getItem(pos).isChecked=true;
+						mFileListAdapter.notifyDataSetChanged();
+					}
+					setContextButtonSelectMode();
+				}
 				return true;
 			}
     	});
@@ -923,7 +969,14 @@ public class ActivityMain extends FragmentActivity {
 	};
 	
 	private void setContextButtonSelectMode() {
-		Thread.dumpStack();
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setIcon(R.drawable.ic_action_done);
+		actionBar.setHomeButtonEnabled(true);
+		
+        int sel_cnt=mFileListAdapter.getItemSelectedCount();
+        int tot_cnt=mFileListAdapter.getCount();
+		actionBar.setTitle(""+sel_cnt+"/"+tot_cnt);
+		
 		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
         LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.context_button_delete_view);
         LinearLayout ll_orientation=(LinearLayout)ll_prof.findViewById(R.id.context_button_orientation_view);
@@ -945,14 +998,20 @@ public class ActivityMain extends FragmentActivity {
         if (sel) ll_archive.setVisibility(LinearLayout.VISIBLE);
         else ll_archive.setVisibility(LinearLayout.GONE);
         
-        ll_select_all.setVisibility(LinearLayout.VISIBLE);
+        if (tot_cnt!=sel_cnt) ll_select_all.setVisibility(LinearLayout.VISIBLE);
+        else ll_select_all.setVisibility(LinearLayout.GONE);
 
         if (sel) ll_unselect_all.setVisibility(LinearLayout.VISIBLE);
         else ll_unselect_all.setVisibility(LinearLayout.GONE);
 	};
 
 	private void setContextButtonNormalMode() {
-		Thread.dumpStack();
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setIcon(R.drawable.main_icon);
+		actionBar.setHomeButtonEnabled(false);
+		
+		actionBar.setTitle(R.string.app_name);
+
 		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
         LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.context_button_delete_view);
         LinearLayout ll_orientation=(LinearLayout)ll_prof.findViewById(R.id.context_button_orientation_view);
@@ -1212,6 +1271,8 @@ public class ActivityMain extends FragmentActivity {
     	}
     	
     	mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, fl);
+    	setFileListCheckBoxHandler(mFileListAdapter);
+    	
     	mFileListView.setAdapter(mFileListAdapter);
     	mCurrentSelectedDayList=sel_day;
     };
@@ -1252,6 +1313,7 @@ public class ActivityMain extends FragmentActivity {
     	}
     	
     	mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, fl);
+    	setFileListCheckBoxHandler(mFileListAdapter);
     	mFileListView.setAdapter(mFileListAdapter);
     	mCurrentSelectedDayList=getString(R.string.msgs_main_folder_type_archive);
     };

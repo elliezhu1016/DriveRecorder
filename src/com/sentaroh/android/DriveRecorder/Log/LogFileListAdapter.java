@@ -102,6 +102,18 @@ public class LogFileListAdapter extends BaseAdapter{
 		return result;
 	};
 	
+	public int getItemSelectedCount() {
+		int result=0;
+		if (log_list!=null) {
+			for(int i=0;i<log_list.size();i++) {
+				if (log_list.get(i).isChecked) {
+					result++;
+				}
+			}
+		}
+		return result;
+	}	
+	
 	public void setAllItemChecked(boolean p) {
 		if (log_list!=null) {
 			for(int i=0;i<log_list.size();i++) {

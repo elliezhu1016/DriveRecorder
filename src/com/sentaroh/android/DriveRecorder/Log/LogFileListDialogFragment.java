@@ -65,6 +65,7 @@ import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.Dialog.MessageDialogFragment;
 import com.sentaroh.android.Utilities.Dialog.ProgressBarDialogFragment;
+import com.sentaroh.android.contextbutton.ContextButtonUtil;
 
 public class LogFileListDialogFragment extends DialogFragment{
 	private final static boolean DEBUG_ENABLE=false;
@@ -268,6 +269,8 @@ public class LogFileListDialogFragment extends DialogFragment{
     	
     	final TextView dlg_title=(TextView)mDialog.findViewById(R.id.log_file_list_dlg_title);
     	dlg_title.setText(mDialogTitle);
+    	final ImageButton dlg_done=(ImageButton)mDialog.findViewById(R.id.log_file_list_dlg_done);
+    	dlg_done.setVisibility(ImageButton.GONE);
     	
     	final ListView lv_log_file=(ListView)mDialog.findViewById(R.id.log_file_list_dlg_log_listview);
     	final Button btn_close=(Button)mDialog.findViewById(R.id.log_file_list_dlg_log_close);
@@ -277,11 +280,12 @@ public class LogFileListDialogFragment extends DialogFragment{
 			@Override
 			public void positiveResponse(Context c, Object[] o) {
 				if (mLogFileManagementAdapter.isShowCheckBox()) {
-		        	if (mLogFileManagementAdapter.isAnyItemSelected()) {
-		        		setContextButtonSelecteMode(mLogFileManagementAdapter);
-		        	} else {
-		        		setContextButtonNormalMode(mLogFileManagementAdapter);
-		        	}
+//		        	if (mLogFileManagementAdapter.isAnyItemSelected()) {
+//		        		setContextButtonSelecteMode(mLogFileManagementAdapter);
+//		        	} else {
+//		        		setContextButtonNormalMode(mLogFileManagementAdapter);
+//		        	}
+					setContextButtonSelecteMode(mLogFileManagementAdapter);
 				}
 			};
 
@@ -305,11 +309,12 @@ public class LogFileListDialogFragment extends DialogFragment{
 					mLogFileManagementAdapter.getItem(pos).isChecked=
 							!mLogFileManagementAdapter.getItem(pos).isChecked;
 					mLogFileManagementAdapter.notifyDataSetChanged();
-		        	if (mLogFileManagementAdapter.isAnyItemSelected()) {
-		        		setContextButtonSelecteMode(mLogFileManagementAdapter);
-		        	} else {
-		        		setContextButtonNormalMode(mLogFileManagementAdapter);
-		        	}
+//		        	if (mLogFileManagementAdapter.isAnyItemSelected()) {
+//		        		setContextButtonSelecteMode(mLogFileManagementAdapter);
+//		        	} else {
+//		        		setContextButtonNormalMode(mLogFileManagementAdapter);
+//		        	}
+		        	setContextButtonSelecteMode(mLogFileManagementAdapter);
 				} else {
 					showLogFile(mLogFileManagementAdapter,pos);
 				}
@@ -319,10 +324,44 @@ public class LogFileListDialogFragment extends DialogFragment{
     	lv_log_file.setOnItemLongClickListener(new OnItemLongClickListener(){
 			@Override
 			public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int pos, long arg3) {
+				if (mLogFileManagementAdapter.isEmptyAdapter()) return true;
 				if (!mLogFileManagementAdapter.getItem(pos).isChecked) {
-					mLogFileManagementAdapter.setShowCheckBox(true);
-					mLogFileManagementAdapter.getItem(pos).isChecked=true;
-					mLogFileManagementAdapter.notifyDataSetChanged();
+					if (mLogFileManagementAdapter.isAnyItemSelected()) {
+						int down_sel_pos=-1, up_sel_pos=-1;
+						int tot_cnt=mLogFileManagementAdapter.getCount();
+						if (pos+1<=tot_cnt) {
+							for(int i=pos+1;i<tot_cnt;i++) {
+								if (mLogFileManagementAdapter.getItem(i).isChecked) {
+									up_sel_pos=i;
+									break;
+								}
+							}
+						}
+						if (pos>0) {
+							for(int i=pos;i>=0;i--) {
+								if (mLogFileManagementAdapter.getItem(i).isChecked) {
+									down_sel_pos=i;
+									break;
+								}
+							}
+						}
+//						Log.v("","up="+up_sel_pos+", down="+down_sel_pos);
+						if (up_sel_pos!=-1 && down_sel_pos==-1) {
+							for (int i=pos;i<up_sel_pos;i++) 
+								mLogFileManagementAdapter.getItem(i).isChecked=true;
+						} else if (up_sel_pos!=-1 && down_sel_pos!=-1) {
+							for (int i=down_sel_pos+1;i<up_sel_pos;i++) 
+								mLogFileManagementAdapter.getItem(i).isChecked=true;
+						} else if (up_sel_pos==-1 && down_sel_pos!=-1) {
+							for (int i=down_sel_pos+1;i<=pos;i++) 
+								mLogFileManagementAdapter.getItem(i).isChecked=true;
+						}
+						mLogFileManagementAdapter.notifyDataSetChanged();
+					} else {
+						mLogFileManagementAdapter.setShowCheckBox(true);
+						mLogFileManagementAdapter.getItem(pos).isChecked=true;
+						mLogFileManagementAdapter.notifyDataSetChanged();
+					}
 					setContextButtonSelecteMode(mLogFileManagementAdapter);
 				}
 				return true;
@@ -339,12 +378,6 @@ public class LogFileListDialogFragment extends DialogFragment{
 //    	CommonDialog.setDlgBoxSizeLimit(mDialog, true);
     };
 
-    private void showLogFile(LogFileListAdapter lfm_adapter, int pos) {
-		Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
-		intent.setDataAndType(Uri.parse("file://"+lfm_adapter.getItem(pos).log_file_path), "text/plain");
-		startActivity(intent);
-    };
-
 	private void setContextButtonListener() {
 		LinearLayout ll_prof=(LinearLayout) mDialog.findViewById(R.id.log_context_view);
         ImageButton ib_delete=(ImageButton)ll_prof.findViewById(R.id.log_context_button_delete);
@@ -352,6 +385,17 @@ public class LogFileListDialogFragment extends DialogFragment{
         ImageButton ib_rotate_log=(ImageButton)ll_prof.findViewById(R.id.log_context_button_rotate_log);
         ImageButton ib_select_all=(ImageButton)ll_prof.findViewById(R.id.log_context_button_select_all);
         ImageButton ib_unselect_all=(ImageButton)ll_prof.findViewById(R.id.log_context_button_unselect_all);
+    	final ImageButton dlg_done=(ImageButton)mDialog.findViewById(R.id.log_file_list_dlg_done);
+    	
+    	dlg_done.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				mLogFileManagementAdapter.setAllItemChecked(false);
+				mLogFileManagementAdapter.setShowCheckBox(false);
+				mLogFileManagementAdapter.notifyDataSetChanged();
+				setContextButtonNormalMode(mLogFileManagementAdapter);
+			}
+        });
         
         ib_delete.setOnClickListener(new OnClickListener(){
 			@Override
@@ -359,19 +403,27 @@ public class LogFileListDialogFragment extends DialogFragment{
 				confirmDeleteLogFile(mLogFileManagementAdapter);
 			}
         });
+        ContextButtonUtil.setButtonLabelListener(mContext, ib_delete, 
+        		mContext.getString(R.string.msgs_log_file_list_label_delete));
+
         ib_share.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				sendLogFile(mLogFileManagementAdapter);
 			}
         });
+        ContextButtonUtil.setButtonLabelListener(mContext, ib_share, 
+        		mContext.getString(R.string.msgs_log_file_list_label_share));
+
         ib_rotate_log.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				rotateLogFile(mLogFileManagementAdapter);
 			}
         });
-
+        ContextButtonUtil.setButtonLabelListener(mContext, ib_rotate_log, 
+        		mContext.getString(R.string.msgs_log_file_list_label_rotate_log));
+        
         ib_select_all.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
@@ -380,18 +432,30 @@ public class LogFileListDialogFragment extends DialogFragment{
 				setContextButtonSelecteMode(mLogFileManagementAdapter);
 			}
         });
+        ContextButtonUtil.setButtonLabelListener(mContext, ib_select_all, 
+        		mContext.getString(R.string.msgs_log_file_list_label_select_all));
+        
         ib_unselect_all.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
 				mLogFileManagementAdapter.setAllItemChecked(false);
 //				mLogFileManagementAdapter.setShowCheckBox(false);
-				setContextButtonNormalMode(mLogFileManagementAdapter);
+//				setContextButtonNormalMode(mLogFileManagementAdapter);
 			}
         });
+        ContextButtonUtil.setButtonLabelListener(mContext, ib_unselect_all, 
+        		mContext.getString(R.string.msgs_log_file_list_label_unselect_all));
 
 	};
 
 	private void setContextButtonSelecteMode(LogFileListAdapter lfm_adapter) {
+		final TextView dlg_title=(TextView)mDialog.findViewById(R.id.log_file_list_dlg_title);
+    	String sel=""+lfm_adapter.getItemSelectedCount()+"/"+lfm_adapter.getCount();
+    	dlg_title.setText(sel);
+
+    	final ImageButton dlg_done=(ImageButton)mDialog.findViewById(R.id.log_file_list_dlg_done);
+    	dlg_done.setVisibility(ImageButton.VISIBLE);
+		
 		LinearLayout ll_prof=(LinearLayout) mDialog.findViewById(R.id.log_context_view);
 		LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.log_context_button_delete_view);
 		LinearLayout ll_share=(LinearLayout)ll_prof.findViewById(R.id.log_context_button_share_view);
@@ -418,6 +482,12 @@ public class LogFileListDialogFragment extends DialogFragment{
 	};
 
 	private void setContextButtonNormalMode(LogFileListAdapter lfm_adapter) {
+		final TextView dlg_title=(TextView)mDialog.findViewById(R.id.log_file_list_dlg_title);
+		dlg_title.setText(mDialogTitle);
+
+    	final ImageButton dlg_done=(ImageButton)mDialog.findViewById(R.id.log_file_list_dlg_done);
+    	dlg_done.setVisibility(ImageButton.GONE);
+
 		LinearLayout ll_prof=(LinearLayout) mDialog.findViewById(R.id.log_context_view);
 		LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.log_context_button_delete_view);
 		LinearLayout ll_share=(LinearLayout)ll_prof.findViewById(R.id.log_context_button_share_view);
@@ -438,6 +508,12 @@ public class LogFileListDialogFragment extends DialogFragment{
             ll_unselect_all.setVisibility(LinearLayout.GONE);
     	}
 	};
+
+    private void showLogFile(LogFileListAdapter lfm_adapter, int pos) {
+		Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+		intent.setDataAndType(Uri.parse("file://"+lfm_adapter.getItem(pos).log_file_path), "text/plain");
+		startActivity(intent);
+    };
 
     private void sendLogFile(final LogFileListAdapter lfm_adapter) {
 		final String zip_file_name=mGlblParms.settingsLogFileDir+"log.zip";
@@ -550,7 +626,7 @@ public class LogFileListDialogFragment extends DialogFragment{
         		delete_list);
         cdf.showDialog(mFragment.getFragmentManager(),cdf,ntfy);
     };
-    
+
     private void rotateLogFile(final LogFileListAdapter lfm_adapter) {
     	LogUtil.rotateLogFile(mContext);
 
@@ -567,7 +643,6 @@ public class LogFileListDialogFragment extends DialogFragment{
     	},100);
     };
 
-    
     public void showDialog(FragmentManager fm, Fragment frag, GlobalParameters gp) {
     	if (DEBUG_ENABLE) Log.v(APPLICATION_TAG,"showDialog");
     	mTerminateRequired=false;

@@ -40,6 +40,12 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
 
 	private NotifyEvent mNotifyCheckBoxEvent=null;
 	public void setNotifyCheckBoxEventHandler(NotifyEvent ntfy) {mNotifyCheckBoxEvent=ntfy;}
+	
+	public int getItemSelectedCount() {
+		int result=0;
+		for(int i=0;i<items.size();i++) if (items.get(i).isChecked) result++;
+		return result;
+	};
 
 	@Override
 	final public View getView(final int position, View convertView, ViewGroup parent) {
@@ -72,7 +78,8 @@ public class AdapterFileList extends ArrayAdapter<FileListItem> {
 					boolean isChecked) {
 				o.isChecked=isChecked;
 				notifyDataSetChanged();
-				if (mNotifyCheckBoxEvent!=null) mNotifyCheckBoxEvent.notifyToListener(true, null);
+				if (mNotifyCheckBoxEvent!=null && isShowCheckBox) 
+					mNotifyCheckBoxEvent.notifyToListener(true, null);
 			}
 		});
    		holder.cb_sel.setChecked(o.isChecked);

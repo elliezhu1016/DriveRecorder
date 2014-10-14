@@ -3,18 +3,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_marginLeft="5dp"
     android:orientation="vertical"
-    tools:ignore="HardcodedText" >
+    tools:ignore="HardcodedText,RtlHardcoded,ContentDescription" >
     
-    <TextView
-        android:id="@+id/log_file_list_dlg_title"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:gravity="center"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <ImageButton
+            android:id="@+id/log_file_list_dlg_done"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:scaleType="centerCrop"
+            android:background="#00000000"
+            android:src="@drawable/ic_action_done" />
+
+        <TextView
+            android:id="@+id/log_file_list_dlg_title"
+            android:layout_width="fill_parent"
+            android:layout_height="40dp"
+            android:gravity="left|center_vertical"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    </LinearLayout>
     
-    <include layout="@layout/divider_line1_turquoise" />
+    
+     <include layout="@layout/divider_line1_turquoise" />
     
     
     <ListView
@@ -24,9 +39,7 @@
         android:layout_weight="1" 
         android:fadeScrollbars="false">
     </ListView>
-
-    <include layout="@layout/log_context_view" />
-    
+	<include layout="@layout/log_context_view" />
     <Button
         android:id="@+id/log_file_list_dlg_log_close"
         android:layout_width="match_parent"
