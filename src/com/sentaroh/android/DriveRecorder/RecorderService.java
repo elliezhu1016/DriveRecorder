@@ -217,7 +217,7 @@ public class RecorderService extends Service {
 								startIntervalRecorder();
 							}
 						} else {
-							mLog.addDebugMsg(1,"I","onStartCommand ignored because Camera direction is back");
+							mLog.addDebugMsg(1,"I","onStartCommand ignored because Camera direction is front");
 							playBackRecorderStopRingtone("DISABLED");
 						}
 					}
