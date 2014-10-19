@@ -36,6 +36,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusMoveCallback;
+import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.ErrorCallback;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -206,13 +207,18 @@ public class RecorderService extends Service {
 			synchronized(mIgnoreVolumeChangedAction) {
 				if (isToggleBtnEnabled() && mIgnoreVolumeChangedAction.equals("0")) {
 					synchronized(mToggleBtnEnabled) {
-						mWidget.setIconStartStop();
-						setToggleBtnEnabled(false);
-						if (mGp.isRecording) {
-							playBackRecorderStopRingtone();
-							stopIntervalRecorder();
+						if (mGp.usedCameraId==0) {
+							mWidget.setIconStartStop();
+							setToggleBtnEnabled(false);
+							if (mGp.isRecording) {
+								playBackRecorderStopRingtone("STOP");
+								stopIntervalRecorder();
+							} else {
+								startIntervalRecorder();
+							}
 						} else {
-							startIntervalRecorder();
+							mLog.addDebugMsg(1,"I","onStartCommand ignored because Camera direction is back");
+							playBackRecorderStopRingtone("DISABLED");
 						}
 					}
 				} else {
@@ -239,7 +245,7 @@ public class RecorderService extends Service {
 	};
 	
 	private String mIgnoreVolumeChangedAction="0";
-	private void playBackRecorderStopRingtone() {
+	private void playBackRecorderStopRingtone(final String rid) {
 		Thread th=new Thread() {
 			@Override
 			public void run() {
@@ -254,7 +260,8 @@ public class RecorderService extends Service {
 					am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, m_n_v, 0);
 					am.setStreamVolume(AudioManager.STREAM_MUSIC, m_m_v, 0);
 					
-					playBackRingtone("Notification/Adara.ogg");
+					if (rid.equals("STOP")) playBackRingtone("Notification/Adara.ogg");
+					else if (rid.equals("DISABLED")) playBackRingtone("Notification/Spica.ogg");
 					
 					am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, c_n_v, 0);
 					am.setStreamVolume(AudioManager.STREAM_MUSIC, c_m_v, 0);
@@ -783,6 +790,12 @@ public class RecorderService extends Service {
     	mLog.addDebugMsg(1,"I","Number of camera="+mGp.numberOfCamera);
     	mLog.addDebugMsg(1,"I","Used camera="+mGp.usedCameraId);
         Camera.Parameters params = camera.getParameters();
+    	
+    	CameraInfo caminfo = new CameraInfo();
+    	Camera.getCameraInfo(mGp.usedCameraId, caminfo);
+
+      	mLog.addDebugMsg(1,"I","Camera facing="+caminfo.facing);
+    			  
         camera.setParameters(params);
         Camera.Parameters p = camera.getParameters();
         mSupportedFocusModeList=p.getSupportedFocusModes();
@@ -962,6 +975,11 @@ public class RecorderService extends Service {
         		else mGp.usedCameraId=0;
         		obtainCameraInfo();
         	}
+        };
+
+        @Override
+        final public int aidlGetCurrentCameraId() throws RemoteException {
+        	return mGp.usedCameraId;
         };
 
     };

@@ -21,4 +21,6 @@ interface IRecorderClient{
 	void aidlSwitchCamera(int cameraid);
 	
 	void aidlSetActivityStarted(boolean started);
+	
+	int aidlGetCurrentCameraId();
 }

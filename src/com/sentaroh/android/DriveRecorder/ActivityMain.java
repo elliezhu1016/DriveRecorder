@@ -14,7 +14,6 @@ import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.NotifyEvent.NotifyEventListener;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -63,7 +62,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class ActivityMain extends ActionBarActivity {
-    public Activity mActivity=null;
+    public ActionBarActivity mActivity=null;
     
     private int mRestartStatus=0;
     private Context mContext=null;
@@ -255,9 +254,7 @@ public class ActivityMain extends ActionBarActivity {
     };
 
 	final private void refreshOptionMenu() {
-		if (Build.VERSION.SDK_INT>=11) {
-			mActivity.invalidateOptionsMenu();
-		}
+		this.supportInvalidateOptionsMenu();
 	};
 
 	@Override
@@ -322,6 +319,8 @@ public class ActivityMain extends ActionBarActivity {
     		menu.findItem(R.id.menu_top_start_recorder).setEnabled(false);
     		menu.findItem(R.id.menu_top_stop_recorder).setEnabled(false);
     	}
+		if (mGp.usedCameraId==0) menu.findItem(R.id.menu_top_change_camera).setTitle("BACK");
+		else menu.findItem(R.id.menu_top_change_camera).setTitle("FRONT");
     	if (!isRecording()) {
     		menu.findItem(R.id.menu_top_change_camera).setVisible(true);
     		menu.findItem(R.id.menu_top_start_recorder).setVisible(true);
@@ -364,6 +363,7 @@ public class ActivityMain extends ActionBarActivity {
 				} catch (RemoteException e) {
 					e.printStackTrace();
 				}
+		    	refreshOptionMenu();
 				return true;
 			case R.id.menu_top_start_recorder:
 				setStartStopBtnEnabled(false);
@@ -565,8 +565,8 @@ public class ActivityMain extends ActionBarActivity {
     private void setDayListListener() {
     	mDayListView.setOnItemClickListener(new OnItemClickListener(){
 			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id) {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				boolean show_cb=mFileListAdapter.isShowCheckBox();
 				for (int j = 0; j < mDayListAdapter.getCount(); j++) {
 					mDayListAdapter.getItem(j).isSelected=false;
 				}
@@ -574,6 +574,10 @@ public class ActivityMain extends ActionBarActivity {
 				mDayListAdapter.notifyDataSetChanged();
 //	            view.setBackgroundColor(Color.DKGRAY);
 				createFileList(mDayListAdapter.getItem(position).folder_name);
+				mFileListAdapter.setShowCheckBox(show_cb);
+				mFileListAdapter.notifyDataSetChanged();
+				if (show_cb) setContextButtonSelectMode();
+				else setContextButtonNormalMode();
 			}
     	});
     	
@@ -863,6 +867,8 @@ public class ActivityMain extends ActionBarActivity {
 						}
 					}
 					if (mGp.housekeepThumnailCache()) mGp.saveThumnailCacheList();
+					mFileListAdapter.setShowCheckBox(false);
+					mFileListAdapter.notifyDataSetChanged();
 			    	if (mFileListAdapter.getCount()==0) {
 			    		createDayList();
 				        if (mDayListAdapter.getCount()>0) {
@@ -871,13 +877,15 @@ public class ActivityMain extends ActionBarActivity {
 								@Override
 								public void run() {
 						    		createFileList(mDayListAdapter.getItem(0).folder_name);
+						    		setContextButtonNormalMode();
 								}
 				        	}, 100);
+				        } else {
+				        	setContextButtonNormalMode();
 				        }
-			    	} 
-					mFileListAdapter.setShowCheckBox(false);
-					mFileListAdapter.notifyDataSetChanged();
-					setContextButtonNormalMode();
+			    	} else {
+						setContextButtonNormalMode();
+			    	}
 				}
 				@Override
 				public void negativeResponse(Context c, Object[] o) {
