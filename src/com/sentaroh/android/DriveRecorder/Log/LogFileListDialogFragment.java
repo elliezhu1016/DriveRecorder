@@ -474,7 +474,9 @@ public class LogFileListDialogFragment extends DialogFragment{
 		}
 		if (deletable_log_selected) ll_delete.setVisibility(LinearLayout.VISIBLE);
 		else ll_delete.setVisibility(LinearLayout.GONE);
-		ll_share.setVisibility(LinearLayout.VISIBLE);
+		
+		if (lfm_adapter.getItemSelectedCount()>0) ll_share.setVisibility(LinearLayout.VISIBLE);
+		else ll_share.setVisibility(LinearLayout.GONE);
         
         ll_select_all.setVisibility(LinearLayout.VISIBLE);
         if (lfm_adapter.isAnyItemSelected()) ll_unselect_all.setVisibility(LinearLayout.VISIBLE);
