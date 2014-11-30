@@ -7,8 +7,8 @@
 
     <ImageButton
         android:id="@+id/context_button_orientation"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="@dimen/context_button_width"
+        android:layout_height="@dimen/context_button_height"
         android:layout_gravity="center_horizontal"
         android:scaleType="centerCrop"
         android:src="@drawable/orientation_landscape" />
