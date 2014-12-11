@@ -58,6 +58,7 @@ import android.widget.TextView;
 
 import com.sentaroh.android.DriveRecorder.GlobalParameters;
 import com.sentaroh.android.DriveRecorder.R;
+import com.sentaroh.android.Utilities.LocalMountPoint;
 import com.sentaroh.android.Utilities.MiscUtil;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.NotifyEvent.NotifyEventListener;
@@ -555,7 +556,8 @@ public class LogFileListDialogFragment extends DialogFragment{
 			public void run() {
 				File lf=new File(zip_file_name);
 				lf.delete();
-				MiscUtil.createZipFile(tc,pbdf,zip_file_name,file_name);
+				String[] lmp=LocalMountPoint.convertFilePathToMountpointFormat(mContext, file_name[0]);
+				MiscUtil.createZipFile(mContext, tc,pbdf,zip_file_name,lmp[0],file_name);
 				if (tc.isEnabled()) {
 				    Intent intent=new Intent();
 				    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

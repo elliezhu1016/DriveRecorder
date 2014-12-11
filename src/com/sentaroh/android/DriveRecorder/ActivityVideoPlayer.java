@@ -32,6 +32,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaScannerConnection;
 import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -47,6 +48,7 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -706,7 +708,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				mSbPlayPosition.setEnabled(true);
 				mCurrentSelectedPos--;
 				prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-				setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
+//				setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 				setPlayBtnPause(true);
 				
 //				setNextPrevBtnStatus();
@@ -723,7 +725,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				mSbPlayPosition.setEnabled(true);
 				mCurrentSelectedPos++;
 				prepareVideo(true, mFileList.get(mCurrentSelectedPos).file_name);
-				setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
+//				setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 				setPlayBtnPause(true);
 //				setNextPrevBtnStatus();
 				setNextPrevBtnDisabled();
@@ -873,6 +875,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			mSbPlayPosition.setProgress(n_pos);
 			mTvPlayPosition.setText(getTimePosition(n_pos));
 			setMoveFrameBtnEnabled(n_pos,c_max);
+			Log.v("","c_pos="+c_pos+", n_pos="+n_pos+", c_max="+c_max);
 		} else {
 			int n_pos=0;
 			if (c_pos>mStepIntervalTime) n_pos=c_pos-mStepIntervalTime;
@@ -1094,6 +1097,15 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					mLog.addDebugMsg(1,"I", "onBufferingUpdate percent:" + percent);
 				}
 			});
+			mMediaPlayer.setOnErrorListener(new OnErrorListener(){
+				@Override
+				public boolean onError(MediaPlayer mp, int what, int extra) {
+					mLog.addDebugMsg(1,"I","onErrorListener called");
+					stopVideoThread();
+					stopMediaPlayer();
+					return true;
+				}
+			});
 			mMediaPlayer.setOnCompletionListener(new OnCompletionListener(){
 				@Override
 				public void onCompletion(MediaPlayer mp) {
@@ -1167,7 +1179,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				}
 			});
 
-			setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
+//			setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 			mMediaPlayer.setDataSource(mVideoFolder+fp);
 			mMediaPlayer.setDisplay(mSurfaceHolder);
 			mMediaPlayer.prepareAsync();
@@ -1252,6 +1264,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	};
 	
 	private void startVideoThread() {
+//		Thread.dumpStack();
 //		setMoveFrameBtnEnabled(mMediaPlayer.getCurrentPosition(), mMediaPlayer.getDuration());
 		mPlayerThread=new Thread() {
 			@Override
@@ -1304,6 +1317,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 	private void stopMediaPlayer() {
 		setVideoPlayerStatus(VIDEO_STATUS_STOPPED);
 		try {
+			mMediaPlayer.stop();
 			mMediaPlayer.reset();
 //			mMediaPlayer.release();
 		} catch(IllegalStateException e) {
