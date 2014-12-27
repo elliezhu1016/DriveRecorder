@@ -11,7 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.sentaroh.android.DriveRecorder.Log.LogUtil;
-import com.sentaroh.android.Utilities.DateUtil;
+import com.sentaroh.android.Utilities.StringUtil;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 
 import android.annotation.SuppressLint;
@@ -425,7 +425,7 @@ public class RecorderService extends Service {
 	private String getVideoFilePath() {
     	File lf=new File(mGp.videoRecordDir);
     	if (!lf.exists()) lf.mkdirs();
-		String dt=DateUtil.convDateTimeTo_YearMonthDayHourMinSec(System.currentTimeMillis());
+		String dt=StringUtil.convDateTimeTo_YearMonthDayHourMinSec(System.currentTimeMillis());
 		String dt_date=dt.substring(0,10).replaceAll("/", "-");
 		String dt_time=dt.substring(11,19).replaceAll(":", "");
 		mGp.currentRecordedFileName=mGp.videoFileNamePrefix+dt_date+"_"+dt_time+".mp4";

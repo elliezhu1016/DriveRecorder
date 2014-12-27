@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import com.sentaroh.android.DriveRecorder.Log.LogUtil;
-import com.sentaroh.android.Utilities.DateUtil;
+import com.sentaroh.android.Utilities.StringUtil;
 import com.sentaroh.android.Utilities.MiscUtil;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.NotifyEvent.NotifyEventListener;
@@ -952,7 +952,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		String dir=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()+"/";
 		File l_dir=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 		if (!l_dir.exists()) l_dir.mkdirs();
-		String ftime=DateUtil.convDateTimeTo_YearMonthDayHourMinSec(System.currentTimeMillis())
+		String ftime=StringUtil.convDateTimeTo_YearMonthDayHourMinSec(System.currentTimeMillis())
 				.replaceAll("/","-").replaceAll(":","").replaceAll(" ", "_");
 		String fn="dr_pic_"+ftime+".jpg";
 		final String pfp=dir+fn;

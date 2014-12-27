@@ -36,7 +36,7 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.sentaroh.android.DriveRecorder.GlobalParameters;
-import com.sentaroh.android.Utilities.DateUtil;
+import com.sentaroh.android.Utilities.StringUtil;
 import com.sentaroh.android.Utilities.MiscUtil;
 
 public final class LogUtil {
@@ -109,7 +109,7 @@ public final class LogUtil {
 			.append("M ")
 			.append(cat)
 			.append(" ")
-			.append(DateUtil.convDateTimeTo_YearMonthDayHourMinSecMili(System.currentTimeMillis()))
+			.append(StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(System.currentTimeMillis()))
 			.append(" ")
 			.append(log_id)
 			.append(log_msg.toString());
@@ -129,7 +129,7 @@ public final class LogUtil {
 		if (gp.settingsLogEnabled) {
 			Intent intent = new Intent(BROADCAST_LOG_SEND);
 			print_msg.append(" ")
-			.append(DateUtil.convDateTimeTo_YearMonthDayHourMinSecMili(System.currentTimeMillis()))
+			.append(StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(System.currentTimeMillis()))
 			.append(" ")
 			.append(log_id)
 			.append(log_msg.toString());
@@ -179,7 +179,7 @@ public final class LogUtil {
         		    	t.log_file_path=file_list[i].getPath();
         		    	t.log_file_size=MiscUtil.convertFileSize(file_list[i].length());
         		    	t.log_file_last_modified=file_list[i].lastModified();
-        		    	String lm_date=DateUtil.convDateTimeTo_YearMonthDayHourMinSec(file_list[i].lastModified());
+        		    	String lm_date=StringUtil.convDateTimeTo_YearMonthDayHourMinSec(file_list[i].lastModified());
         		    	if (file_list[i].getPath().equals(gp.settingsLogFileDir+gp.settingsLogFileName+".txt"))
         		    		t.isCurrentLogFile=true;
         		    	t.log_file_last_modified_date=lm_date.substring(0,10);
@@ -193,7 +193,7 @@ public final class LogUtil {
         		    	t.log_file_last_modified=file_list[i].lastModified();
         		    	if (file_list[i].getPath().equals(gp.settingsLogFileDir+gp.settingsLogFileName+".txt"))
         		    		t.isCurrentLogFile=true;
-        		    	String lm_date=DateUtil.convDateTimeTo_YearMonthDayHourMinSec(file_list[i].lastModified());
+        		    	String lm_date=StringUtil.convDateTimeTo_YearMonthDayHourMinSec(file_list[i].lastModified());
         		    	t.log_file_last_modified_date=lm_date.substring(0,10);
         		    	t.log_file_last_modified_time=lm_date.substring(11);
         		    	lfm_fl.add(t);
