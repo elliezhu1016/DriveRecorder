@@ -71,6 +71,7 @@ import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.TextView;
 
+@SuppressWarnings("deprecation")
 public class RecorderService extends Service {
     private Camera mServiceCamera;
     private MediaRecorder mMediaRecorder;
