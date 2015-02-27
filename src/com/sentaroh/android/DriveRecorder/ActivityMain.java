@@ -167,7 +167,7 @@ public class ActivityMain extends ActionBarActivity {
         
         mCommonDlg=new CommonDialog(mContext, getSupportFragmentManager());
         
-        mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, new ArrayList<FileListItem>());
+        mFileListAdapter=new AdapterFileList(this, R.layout.file_list_item, new ArrayList<FileListItem>());
         setFileListCheckBoxHandler(mFileListAdapter);
 
         Intent intent = new Intent(this, RecorderService.class);
@@ -1181,7 +1181,7 @@ public class ActivityMain extends ActionBarActivity {
     			fl.get(i).no_of_file=""+cnt+"ファイル";
     		}
     	}
-    	mDayListAdapter=new AdapterDayList(mContext, R.layout.day_list_item, fl);
+    	mDayListAdapter=new AdapterDayList(this, R.layout.day_list_item, fl);
     	mDayListView.setAdapter(mDayListAdapter);
     	
     	createDayArchiveList();
@@ -1278,7 +1278,7 @@ public class ActivityMain extends ActionBarActivity {
     		});
     	}
     	
-    	mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, fl);
+    	mFileListAdapter=new AdapterFileList(this, R.layout.file_list_item, fl);
     	setFileListCheckBoxHandler(mFileListAdapter);
     	
     	mFileListView.setAdapter(mFileListAdapter);
@@ -1320,7 +1320,7 @@ public class ActivityMain extends ActionBarActivity {
     		});
     	}
     	
-    	mFileListAdapter=new AdapterFileList(mContext, R.layout.file_list_item, fl);
+    	mFileListAdapter=new AdapterFileList(this, R.layout.file_list_item, fl);
     	setFileListCheckBoxHandler(mFileListAdapter);
     	mFileListView.setAdapter(mFileListAdapter);
     	mCurrentSelectedDayList=getString(R.string.msgs_main_folder_type_archive);

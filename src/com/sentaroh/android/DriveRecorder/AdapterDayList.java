@@ -47,7 +47,7 @@ public class AdapterDayList extends ArrayAdapter<DayFolderListItem> {
         }
         final DayFolderListItem o = items.get(position);
     	holder.tv_itemname.setText(o.folder_name);
-    	if (o.isSelected) holder.ll_view.setBackgroundColor(Color.DKGRAY);
+    	if (o.isSelected) holder.ll_view.setBackgroundColor(Color.GRAY);
     	else holder.ll_view.setBackgroundColor(Color.TRANSPARENT);
 //    	holder.tv_count.setText(o.no_of_file);
         return v;
