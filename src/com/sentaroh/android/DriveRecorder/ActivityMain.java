@@ -976,14 +976,26 @@ public class ActivityMain extends ActionBarActivity {
     	return result;
 	};
 	
-	private void setContextButtonSelectMode() {
+	private void setActionBarSelectMode(int sel_cnt, int total_cnt) {
 		ActionBar actionBar = getSupportActionBar();
-		actionBar.setIcon(R.drawable.ic_action_done);
 		actionBar.setHomeButtonEnabled(true);
-		
+		actionBar.setDisplayHomeAsUpEnabled(true);
+        String sel_txt=""+sel_cnt+"/"+total_cnt;
+        actionBar.setTitle(sel_txt);
+	};
+
+	private void setActionBarNormalMode() {
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setTitle(R.string.app_name);
+		actionBar.setHomeButtonEnabled(false);
+		actionBar.setDisplayHomeAsUpEnabled(false);
+	};
+
+	
+	private void setContextButtonSelectMode() {
         int sel_cnt=mFileListAdapter.getItemSelectedCount();
         int tot_cnt=mFileListAdapter.getCount();
-		actionBar.setTitle(""+sel_cnt+"/"+tot_cnt);
+		setActionBarSelectMode(sel_cnt, tot_cnt);
 		
 		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
         LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.context_button_delete_view);
@@ -1014,11 +1026,7 @@ public class ActivityMain extends ActionBarActivity {
 	};
 
 	private void setContextButtonNormalMode() {
-		ActionBar actionBar = getSupportActionBar();
-		actionBar.setIcon(R.drawable.main_icon);
-		actionBar.setHomeButtonEnabled(false);
-		
-		actionBar.setTitle(R.string.app_name);
+		setActionBarNormalMode();
 
 		LinearLayout ll_prof=(LinearLayout) findViewById(R.id.context_filelist_view);
         LinearLayout ll_delete=(LinearLayout)ll_prof.findViewById(R.id.context_button_delete_view);
