@@ -813,7 +813,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		waitMoveFrameThread();
 	};
 		
-	private final int mStepIntervalTime=500;
+	private final int mStepIntervalTime=3000;
 	private void startMoveFrame(final ThreadCtrl tc, final String direction) {
 		final Handler hndl=new Handler();
 		mMoveFrameActive=true;
@@ -829,7 +829,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					});
 					synchronized(tc) {
 						try {
-							tc.wait(100);
+							tc.wait(300);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
