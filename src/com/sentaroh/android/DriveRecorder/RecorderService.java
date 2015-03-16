@@ -212,14 +212,15 @@ public class RecorderService extends Service {
 							mWidget.setIconStartStop();
 							setToggleBtnEnabled(false);
 							if (mGp.isRecording) {
-								playBackRecorderStopRingtone("STOP");
+								playBackStartSopRecorderRingtone("STOP");
 								stopIntervalRecorder();
 							} else {
+								playBackStartSopRecorderRingtone("START");
 								startIntervalRecorder();
 							}
 						} else {
 							mLog.addDebugMsg(1,"I","onStartCommand ignored because Camera direction is front");
-							playBackRecorderStopRingtone("DISABLED");
+							playBackStartSopRecorderRingtone("DISABLED");
 						}
 					}
 				} else {
@@ -246,7 +247,7 @@ public class RecorderService extends Service {
 	};
 	
 	private String mIgnoreVolumeChangedAction="0";
-	private void playBackRecorderStopRingtone(final String rid) {
+	private void playBackStartSopRecorderRingtone(final String rid) {
 		Thread th=new Thread() {
 			@Override
 			public void run() {
@@ -262,6 +263,7 @@ public class RecorderService extends Service {
 					am.setStreamVolume(AudioManager.STREAM_MUSIC, m_m_v, 0);
 					
 					if (rid.equals("STOP")) playBackRingtone("Notification/Adara.ogg");
+					else if (rid.equals("START")) playBackRingtone("Notification/Procyon.ogg");
 					else if (rid.equals("DISABLED")) playBackRingtone("Notification/Spica.ogg");
 					
 					am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, c_n_v, 0);
