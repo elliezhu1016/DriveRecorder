@@ -66,7 +66,7 @@ import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.Dialog.MessageDialogFragment;
 import com.sentaroh.android.Utilities.Dialog.ProgressBarDialogFragment;
-import com.sentaroh.android.contextbutton.ContextButtonUtil;
+import com.sentaroh.android.Utilities.ContextButton.ContextButtonUtil;
 
 public class LogFileListDialogFragment extends DialogFragment{
 	private final static boolean DEBUG_ENABLE=false;
