@@ -520,6 +520,7 @@ public class ActivityMain extends ActionBarActivity {
 //		enableBrowseLogFileMenu=false;
 		if (mLog.isLogFileExists()) {
 			Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			intent.setDataAndType(Uri.parse("file://"+mLog.getLogFilePath()), "text/plain");
 			startActivity(intent);
 		}

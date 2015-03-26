@@ -263,7 +263,7 @@ public class RecorderService extends Service {
 					am.setStreamVolume(AudioManager.STREAM_MUSIC, m_m_v, 0);
 					
 					if (rid.equals("STOP")) playBackRingtone("Notification/Adara.ogg");
-					else if (rid.equals("START")) playBackRingtone("Notification/Procyon.ogg");
+					else if (rid.equals("START")) playBackRingtone("Notification/Mira.ogg");
 					else if (rid.equals("DISABLED")) playBackRingtone("Notification/Spica.ogg");
 					
 					am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, c_n_v, 0);

@@ -514,6 +514,7 @@ public class LogFileListDialogFragment extends DialogFragment{
 
     private void showLogFile(LogFileListAdapter lfm_adapter, int pos) {
 		Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		intent.setDataAndType(Uri.parse("file://"+lfm_adapter.getItem(pos).log_file_path), "text/plain");
 		startActivity(intent);
     };
