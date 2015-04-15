@@ -53,8 +53,7 @@
 
     <CheckBox
         android:id="@+id/log_file_list_item_checkbox"
-        style="@style/check_box_style"
-        android:layout_width="40dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:focusable="false"

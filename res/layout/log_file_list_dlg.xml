@@ -17,7 +17,7 @@
             android:layout_height="40dp"
             android:scaleType="centerCrop"
             android:background="#00000000"
-            android:src="@drawable/ic_action_done" />
+            android:src="@drawable/abc_ic_ab_back_mtrl_am_alpha" />
 
         <TextView
             android:id="@+id/log_file_list_dlg_title"
