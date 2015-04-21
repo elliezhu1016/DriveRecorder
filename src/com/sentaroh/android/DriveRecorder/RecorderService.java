@@ -11,7 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.sentaroh.android.DriveRecorder.Log.LogUtil;
-import com.sentaroh.android.Utilities.StringUtil;
+import com.sentaroh.android.Utilities.StringUtil; 
 import com.sentaroh.android.Utilities.ThreadCtrl;
 
 import android.annotation.SuppressLint;

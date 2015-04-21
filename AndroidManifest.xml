@@ -84,13 +84,12 @@
     	    android:exported="false" android:process=":Log">
 			<intent-filter>
 			    <action android:name="android.intent.action.ACTION_SHUTDOWN" />
-			    <action android:name="android.intent.action.MEDIA_MOUNTED" />
-			    <action android:name="android.intent.action.MEDIA_EJECT" />
 				<action android:name="com.sentaroh.android.DriveRecorder.ACTION_LOG_SEND" />
 				<action android:name="com.sentaroh.android.DriveRecorder.ACTION_LOG_RESET" />
 				<action android:name="com.sentaroh.android.DriveRecorder.ACTION_LOG_DELETE" />
 				<action android:name="com.sentaroh.android.DriveRecorder.ACTION_LOG_ROTATE" />
 				<action android:name="com.sentaroh.android.DriveRecorder.ACTION_LOG_FLUSH" />
+				<action android:name="com.sentaroh.android.DriveRecorder.ACTION_LOG_CLOSE" />
 			</intent-filter>
 		</receiver>
         

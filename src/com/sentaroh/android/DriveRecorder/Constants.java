@@ -26,4 +26,11 @@ public class Constants {
 	public static final String BROADCAST_SERVICE_HEARTBEAT=
 			"com.sentaroh.android.DriveRecorder.ACTION_SERVICE_HEARTBEAT";
 
+	public static final String BROADCAST_LOG_SEND=PACKAGE_NAME+".ACTION_LOG_SEND";
+	public static final String BROADCAST_LOG_RESET=PACKAGE_NAME+".ACTION_LOG_RESET";
+	public static final String BROADCAST_LOG_ROTATE=PACKAGE_NAME+".ACTION_LOG_ROTATE";
+	public static final String BROADCAST_LOG_DELETE=PACKAGE_NAME+".ACTION_LOG_DELETE";
+	public static final String BROADCAST_LOG_FLUSH=PACKAGE_NAME+".ACTION_LOG_FLUSH";
+	public static final String BROADCAST_LOG_CLOSE=PACKAGE_NAME+".ACTION_LOG_CLOSE";
+
 }

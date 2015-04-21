@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
+import com.sentaroh.android.Utilities.CommonGlobalParms;
+
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
@@ -35,7 +37,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 @SuppressWarnings("unused")
-public class GlobalParameters extends Application{
+public class GlobalParameters extends CommonGlobalParms{
 	public boolean settingsDebugEnabled=true;
 	public int settingsDebugLevel=1;
 	public boolean settingsExitCleanly=true;
@@ -86,6 +88,12 @@ public class GlobalParameters extends Application{
 	
 	public boolean settingsSceneModeActionEnabled=false;
     
+	public void setLogOptionEnabled(Context c, boolean enabled) {
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+		prefs.edit().putBoolean(c.getString(R.string.settings_debug_enable),enabled).commit();
+		settingsLogEnabled=enabled;
+	};
+
 	public void loadSettingParms(Context c) {
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
@@ -138,6 +146,19 @@ public class GlobalParameters extends Application{
 		settingsStartAutoFocusAfterVideoRecordStarted=
 				prefs.getBoolean(c.getString(R.string.settings_start_auto_focus_after_video_record_started),false);
 		
+		setDebugLevel(settingsDebugLevel);
+		setLogLimitSize(2*1024*1024);
+		setLogMaxFileCount(10);
+		setLogEnabled(settingsLogEnabled);
+		setLogDirName(settingsLogFileDir);
+		setLogFileName(settingsLogFileName);
+		setApplicationTag(APPLICATION_TAG);
+		setLogIntent(BROADCAST_LOG_RESET,
+				BROADCAST_LOG_DELETE,
+				BROADCAST_LOG_FLUSH,
+				BROADCAST_LOG_ROTATE,
+				BROADCAST_LOG_SEND,
+				BROADCAST_LOG_CLOSE);
 	};
 	
 	public void initSettingParms(Context c) {

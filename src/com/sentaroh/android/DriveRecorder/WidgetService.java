@@ -1,6 +1,7 @@
 package com.sentaroh.android.DriveRecorder;
 
 import static com.sentaroh.android.DriveRecorder.Constants.*;
+
 import com.sentaroh.android.DriveRecorder.Log.LogUtil;
 
 import android.app.PendingIntent;

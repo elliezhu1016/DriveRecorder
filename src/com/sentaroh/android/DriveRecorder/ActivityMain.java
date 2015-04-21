@@ -8,7 +8,7 @@ import java.util.Comparator;
 
 import com.sentaroh.android.DriveRecorder.Log.LogFileListDialogFragment;
 import com.sentaroh.android.DriveRecorder.Log.LogUtil;
-import com.sentaroh.android.Utilities.MiscUtil;
+import com.sentaroh.android.Utilities.MiscUtil; 
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.NotifyEvent.NotifyEventListener;
@@ -403,10 +403,7 @@ public class ActivityMain extends ActionBarActivity {
 				invokeSettingsActivity();
 				return true;				
 			case R.id.menu_top_manage_log:
-				mLog.flushLog();
-				LogFileListDialogFragment lfm=
-						LogFileListDialogFragment.newInstance(false,getString(R.string.msgs_log_file_list_title));
-				lfm.showDialog(getSupportFragmentManager(), lfm, mGp);
+				invokeLogManagement();
 				return true;				
 			case R.id.menu_top_about_drive_recorder:
 				about();
@@ -422,6 +419,26 @@ public class ActivityMain extends ActionBarActivity {
 		}
 		return false;
 	};
+	
+	private void invokeLogManagement() {
+		NotifyEvent ntfy=new NotifyEvent(mContext);
+		ntfy.setListener(new NotifyEventListener(){
+			@Override
+			public void positiveResponse(Context c, Object[] o) {
+				boolean enabled=(Boolean)o[0];
+				mGp.setLogOptionEnabled(mContext,enabled);
+				applySettingParms();
+			}
+			@Override
+			public void negativeResponse(Context c, Object[] o) {}
+		});
+		mLog.resetLogReceiver();
+		LogFileListDialogFragment lfmf=LogFileListDialogFragment.newInstance(true,
+				mContext.getString(R.string.msgs_log_file_list_title));
+		lfmf.showDialog(getSupportFragmentManager(), lfmf, mGp, ntfy);
+
+	};
+
 	
 	private void processHomeButtonPress() {
 		if (mFileListAdapter.isShowCheckBox()) {
