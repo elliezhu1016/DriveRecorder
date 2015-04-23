@@ -42,7 +42,7 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -61,8 +61,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class ActivityMain extends ActionBarActivity {
-    public ActionBarActivity mActivity=null;
+public class ActivityMain extends AppCompatActivity {
+    public AppCompatActivity mActivity=null;
     
     private int mRestartStatus=0;
     private Context mContext=null;
