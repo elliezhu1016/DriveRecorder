@@ -33,6 +33,7 @@ import android.graphics.Rect;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnSeekCompleteListener;
 import android.media.MediaScannerConnection;
 import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -48,7 +49,6 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -820,6 +820,8 @@ public class ActivityVideoPlayer extends FragmentActivity{
 		mThMoveFrame=new Thread(){
 			@Override
 			public void run() {
+				long b_wt=0, e_wt=0;
+				long wait_time=150;
 				while(tc.isEnabled()) {
 					hndl.post(new Runnable(){
 						@Override
@@ -829,7 +831,11 @@ public class ActivityVideoPlayer extends FragmentActivity{
 					});
 					synchronized(tc) {
 						try {
-							tc.wait(300);
+							b_wt=System.currentTimeMillis();
+							tc.wait();
+							e_wt=wait_time-(System.currentTimeMillis()-b_wt);
+							if (e_wt>10) tc.wait(e_wt);
+//							tc.wait(300);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -875,7 +881,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 			mSbPlayPosition.setProgress(n_pos);
 			mTvPlayPosition.setText(getTimePosition(n_pos));
 			setMoveFrameBtnEnabled(n_pos,c_max);
-			Log.v("","c_pos="+c_pos+", n_pos="+n_pos+", c_max="+c_max);
+//			Log.v("","c_pos="+c_pos+", n_pos="+n_pos+", c_max="+c_max);
 		} else {
 			int n_pos=0;
 			if (c_pos>mStepIntervalTime) n_pos=c_pos-mStepIntervalTime;
@@ -1177,6 +1183,17 @@ public class ActivityVideoPlayer extends FragmentActivity{
 				public void onVideoSizeChanged(MediaPlayer mp, int video_width, int video_height) {
 					mLog.addDebugMsg(1,"I","onVideoSizeChanged called, width="+video_width+", height="+video_height);
 				}
+			});
+			
+			mMediaPlayer.setOnSeekCompleteListener(new OnSeekCompleteListener(){
+				@Override
+				public void onSeekComplete(MediaPlayer mp) {
+//					Log.v("","seek completed, pos="+mp.getCurrentPosition());
+					synchronized(mTcMoveFrame) {
+						mTcMoveFrame.notify();
+					}
+				}
+				
 			});
 
 //			setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
