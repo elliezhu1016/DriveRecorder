@@ -1041,6 +1041,8 @@ public class ActivityMain extends AppCompatActivity {
 
         if (sel) ll_unselect_all.setVisibility(LinearLayout.VISIBLE);
         else ll_unselect_all.setVisibility(LinearLayout.GONE);
+        
+        ll_prof.invalidate();
 	};
 
 	private void setContextButtonNormalMode() {
@@ -1061,6 +1063,7 @@ public class ActivityMain extends AppCompatActivity {
         if (mFileListAdapter!=null && mFileListAdapter.getCount()>0) ll_select_all.setVisibility(LinearLayout.VISIBLE);
         else ll_select_all.setVisibility(LinearLayout.GONE);
         ll_unselect_all.setVisibility(LinearLayout.GONE);
+        ll_prof.invalidate();
 	};
 
 //    private void sendFile(final LogFileListAdapter lfm_adapter) {

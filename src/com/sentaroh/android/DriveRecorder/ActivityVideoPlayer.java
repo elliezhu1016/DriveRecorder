@@ -1182,6 +1182,7 @@ public class ActivityVideoPlayer extends FragmentActivity{
 //			setVideoPlayerStatus(VIDEO_STATUS_PLAYING);
 			mMediaPlayer.setDataSource(mVideoFolder+fp);
 			mMediaPlayer.setDisplay(mSurfaceHolder);
+//			mMediaPlayer.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
 			mMediaPlayer.prepareAsync();
 			
 		} catch (IllegalArgumentException e) {
