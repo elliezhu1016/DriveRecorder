@@ -729,10 +729,14 @@ public class RecorderService extends Service {
         	mLog.addDebugMsg(1, "E", "MediaRecorder stop() was failed.");
         	printStackTrace(e.toString(), e.getStackTrace(), e.getCause());
         } finally {
+        	mLog.addDebugMsg(1, "I", "MediaRecorder reset & release issued.");
+        	SystemClock.sleep(500);
             mMediaRecorder.reset();
             mMediaRecorder.release();
+            
         }
         
+        mLog.addDebugMsg(1, "I", "stopVideoRecorder prepare scan. fn="+mGp.currentRecordedFileName);
         mIsAutoFocusStarted=false;
         mServiceCamera.lock();
         mServiceCamera.stopPreview();
@@ -746,6 +750,7 @@ public class RecorderService extends Service {
         		   	WakeLock wl=((PowerManager)getSystemService(Context.POWER_SERVICE))
         	    			.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK    					
         	    				| PowerManager.ON_AFTER_RELEASE, "DriveRecorder-ThumnailCache");
+        		   	mLog.addDebugMsg(1, "I", "stopVideoRecorder scan issued.");
         		   	try {
             		   	wl.acquire();
             		   	SystemClock.sleep(1000);
@@ -765,6 +770,7 @@ public class RecorderService extends Service {
 
         		   	} finally {
                     	wl.release();
+                    	mLog.addDebugMsg(1, "I", "stopVideoRecorder scan ended.");
         		   	}
         		}
         	};
